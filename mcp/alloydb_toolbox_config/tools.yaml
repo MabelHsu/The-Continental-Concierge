@@ -1,0 +1,206 @@
+# MCP Toolbox for Databases Configuration
+# ==========================================
+# This configures the Google MCP Toolbox for Databases
+# to expose AlloyDB as MCP tools that ADK agents can call.
+#
+# Deployment: Run as a Cloud Run service alongside the agents.
+# Docs: https://github.com/googleapis/genai-toolbox
+
+version: "1"
+
+sources:
+  continental-db:
+    kind: alloydb-postgres
+    project: ${GOOGLE_CLOUD_PROJECT}
+    region: ${GOOGLE_CLOUD_REGION}
+    cluster: continental-cluster
+    instance: continental-primary
+    database: continental
+    user: continental_app
+    password:
+      kind: secret-manager
+      project: ${GOOGLE_CLOUD_PROJECT}
+      secret: continental-db-password
+      version: latest
+
+tools:
+  # ── Archivist Tools ──────────────────────────────────────
+  
+  search-lore:
+    kind: postgres-sql
+    source: continental-db
+    description: >
+      Hybrid search over the Continental's lore corpus.
+      Combines keyword and semantic search using RRF.
+    parameters:
+      - name: query
+        type: string
+        description: "The search query text"
+      - name: limit
+        type: integer
+        description: "Maximum results to return (default 5)"
+    statement: >
+      SELECT * FROM hybrid_lore_search(
+        $1,
+        google_ml.embedding('textembedding-gecko@003', $1)::vector(768),
+        COALESCE($2, 5)
+      )
+
+  get-character:
+    kind: postgres-sql
+    source: continental-db
+    description: "Get full character dossier with debts, relationships, and recent events."
+    parameters:
+      - name: name
+        type: string
+        description: "Character name or alias"
+    statement: >
+      SELECT * FROM character_dossier
+      WHERE LOWER(name) = LOWER($1)
+         OR LOWER($1) = ANY(SELECT LOWER(unnest(aliases)))
+      LIMIT 1
+
+  get-rules:
+    kind: postgres-sql
+    source: continental-db
+    description: "Get active hotel rules with violation history."
+    parameters:
+      - name: rule_number
+        type: integer
+        description: "Specific rule number (optional, returns all if omitted)"
+    statement: >
+      SELECT * FROM active_rules_with_violations
+      WHERE rule_number = COALESCE($1, rule_number)
+      ORDER BY rule_number
+
+  get-faction:
+    kind: postgres-sql
+    source: continental-db
+    description: "Get faction details with member list."
+    parameters:
+      - name: faction_name
+        type: string
+        description: "Faction name"
+    statement: >
+      SELECT f.*,
+        json_agg(json_build_object('name', c.name, 'role', c.role, 'status', c.status)) AS members
+      FROM factions f
+      LEFT JOIN characters c ON c.faction_id = f.id
+      WHERE LOWER(f.name) = LOWER($1)
+      GROUP BY f.id
+
+  # ── Ledger Tools ─────────────────────────────────────────
+
+  get-debts:
+    kind: postgres-sql
+    source: continental-db
+    description: "Get outstanding debts for a character."
+    parameters:
+      - name: character_name
+        type: string
+        description: "Character name"
+    statement: >
+      SELECT dn.*
+      FROM debt_network dn
+      WHERE (LOWER(dn.creditor) = LOWER($1) OR LOWER(dn.debtor) = LOWER($1))
+        AND dn.status = 'outstanding'
+      ORDER BY dn.value_weight DESC
+
+  get-reputation:
+    kind: postgres-sql
+    source: continental-db
+    description: "Get reputation ledger entry for a character."
+    parameters:
+      - name: character_name
+        type: string
+        description: "Character name"
+    statement: >
+      SELECT * FROM reputation_ledger
+      WHERE LOWER(name) = LOWER($1)
+
+  # ── Timeline Tools ───────────────────────────────────────
+
+  get-schedule:
+    kind: postgres-sql
+    source: continental-db
+    description: "Get events scheduled for a story day."
+    parameters:
+      - name: story_day
+        type: integer
+        description: "The story day number"
+    statement: >
+      SELECT * FROM day_schedule
+      WHERE story_day = $1
+
+  check-conflicts:
+    kind: postgres-sql
+    source: continental-db
+    description: "Check for timeline conflicts on a story day."
+    parameters:
+      - name: story_day
+        type: integer
+        description: "The story day number"
+    statement: >
+      SELECT * FROM timeline_conflicts
+      WHERE story_day = $1
+
+  who-is-where:
+    kind: postgres-sql
+    source: continental-db
+    description: "Get current location of all active characters."
+    statement: >
+      SELECT * FROM location_occupants
+      WHERE occupant_count > 0
+      ORDER BY occupant_count DESC
+
+  # ── Narrator Tools ───────────────────────────────────────
+
+  get-scene-material:
+    kind: postgres-sql
+    source: continental-db
+    description: "Get scene material for narrative rendering."
+    parameters:
+      - name: event_id
+        type: string
+        description: "Event UUID"
+    statement: >
+      SELECT * FROM scene_material
+      WHERE event_id = $1::uuid
+
+  recall-scenes:
+    kind: postgres-sql
+    source: continental-db
+    description: "Search past scene memories by semantic similarity."
+    parameters:
+      - name: query
+        type: string
+        description: "Search query for scene recall"
+      - name: limit
+        type: integer
+        description: "Max results (default 3)"
+    statement: >
+      SELECT story_day, scene_text, mood, characters_present,
+             1 - (embedding <=> google_ml.embedding('textembedding-gecko@003', $1)::vector(768)) AS similarity
+      FROM scene_memories
+      ORDER BY embedding <=> google_ml.embedding('textembedding-gecko@003', $1)::vector(768)
+      LIMIT COALESCE($2, 3)
+
+toolsets:
+  archivist-tools:
+    - search-lore
+    - get-character
+    - get-rules
+    - get-faction
+
+  ledger-tools:
+    - get-debts
+    - get-reputation
+
+  timeline-tools:
+    - get-schedule
+    - check-conflicts
+    - who-is-where
+
+  narrator-tools:
+    - get-scene-material
+    - recall-scenes

@@ -1,0 +1,74 @@
+# Cloud Run Service Definition
+# =============================
+# Deploy with: gcloud run services replace service.yaml
+
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: continental-concierge
+  labels:
+    cloud.googleapis.com/location: us-central1
+  annotations:
+    run.googleapis.com/ingress: all
+    run.googleapis.com/launch-stage: GA
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "0"
+        autoscaling.knative.dev/maxScale: "5"
+        run.googleapis.com/startup-cpu-boost: "true"
+        # AlloyDB Auth Proxy sidecar
+        run.googleapis.com/container-dependencies: '{"app":["alloydb-proxy"]}'
+    spec:
+      containerConcurrency: 80
+      timeoutSeconds: 300
+      serviceAccountName: continental-sa@${PROJECT_ID}.iam.gserviceaccount.com
+      
+      containers:
+        # Main application container
+        - name: app
+          image: ${REGION}-docker.pkg.dev/${PROJECT_ID}/continental/concierge:latest
+          ports:
+            - containerPort: 8080
+          resources:
+            limits:
+              cpu: "2"
+              memory: "1Gi"
+          env:
+            - name: GOOGLE_CLOUD_PROJECT
+              value: "${PROJECT_ID}"
+            - name: GOOGLE_CLOUD_REGION
+              value: "${REGION}"
+            - name: ALLOYDB_HOST
+              value: "127.0.0.1"  # Via Auth Proxy sidecar
+            - name: ALLOYDB_PORT
+              value: "5432"
+            - name: ALLOYDB_DATABASE
+              value: "continental"
+            - name: ALLOYDB_USER
+              value: "continental_app"
+            - name: ALLOYDB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: continental-db-password
+                  key: latest
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 10
+
+        # AlloyDB Auth Proxy sidecar
+        - name: alloydb-proxy
+          image: gcr.io/alloydb-connectors/alloydb-auth-proxy:latest
+          args:
+            - "${PROJECT_ID}:${REGION}:continental-cluster"
+            - "--port=5432"
+            - "--auto-iam-authn"
+          resources:
+            limits:
+              cpu: "0.5"
+              memory: "256Mi"

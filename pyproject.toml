@@ -1,0 +1,26 @@
+[project]
+name = "continental-concierge"
+version = "1.0.0"
+description = "A multi-agent narrative system set in the world of The Continental"
+requires-python = ">=3.12"
+dependencies = [
+    "google-adk>=0.3.0",
+    "google-cloud-aiplatform[agent_engines]>=1.75.0",
+    "asyncpg>=0.30.0",
+    "pgvector>=0.3.0",
+    "mcp[cli]>=1.0.0",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.32.0",
+    "pydantic>=2.0.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["evals"]
