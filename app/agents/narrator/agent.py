@@ -22,9 +22,7 @@ narrator_agent = Agent(
     model=config.model_name,
     instruction=NARRATOR_INSTRUCTION,
     tools=[
-        # Narrator can pull world state for atmosphere
         FunctionTool(func=get_world_state),
-        # And lore for flavor
         FunctionTool(func=search_lore),
     ],
     generate_content_config={

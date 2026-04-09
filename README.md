@@ -294,31 +294,6 @@ Here's what a 10-turn demo session looks like:
 
 ---
 
-## What Makes This Impressive
-
-Not the theme. The **state model**.
-
-A strong demo shows:
-- The same character remembered across sessions.
-- Debts affecting later scenes (Sofia's resolved marker changes turn 8).
-- Timeline conflicts detected automatically (enemies at same location).
-- Retrieval of old lore plus recent events via hybrid search.
-- Agents disagreeing and the Orchestrator resolving it.
-- A full "night at the hotel" that evolves over 10–20 turns.
-
----
-
-## What's Avoided
-
-- ❌ Too many agents (5 is the ceiling)
-- ❌ No persistent world state (AlloyDB handles everything)
-- ❌ Storing everything as unstructured chat history (structured tables + embeddings)
-- ❌ Letting every agent write final prose (only the Narrator)
-- ❌ Thin wrapper over CRUD (the entertainment layer has real depth)
-- ❌ AlloyDB as only a vector store (relational + vector, two jobs)
-
----
-
 ## Memory Bank vs AlloyDB
 
 | Memory Bank | AlloyDB |
@@ -329,3 +304,4 @@ A strong demo shows:
 | User-specific preferences | Canonical world state |
 
 Memory Bank handles personalization. AlloyDB is the source of truth for the world.
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      

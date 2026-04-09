@@ -38,22 +38,7 @@ async def check_consistency(
         }
     """
     issues = []
-    
-    # 1. Check character locations
-    # For each character mentioned, verify they're where the narrative says they are
-    
-    # 2. Check character status
-    # Dead characters can't speak. Excommunicado characters can't use services.
-    
-    # 3. Check timeline coherence
-    # Events must happen in chronological order within a phase
-    
-    # 4. Check rule compliance
-    # If violence is described on hotel grounds, flag Rule 1 violation
-    
-    # 5. Check debt validity
-    # Markers can only be called by creditors
-    
+
     return {
         "is_consistent": len(issues) == 0,
         "issues": issues,

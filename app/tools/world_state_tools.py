@@ -19,10 +19,7 @@ async def get_world_state() -> dict:
         dict with keys: day, phase, crisis_level, crisis_name, hotel_status,
                        high_table_edict, active_character_count, pending_mission_count
     """
-    # In production, this executes via MCP Toolbox:
-    # SELECT * FROM story_state WHERE id = 1
-    # Plus counts from characters and missions
-    pass  # MCP Toolbox handles the actual query
+    pass
 
 
 async def advance_time(phases_to_advance: int = 1) -> dict:
@@ -35,12 +32,6 @@ async def advance_time(phases_to_advance: int = 1) -> dict:
     Returns:
         dict with new day/phase and any triggered events
     """
-    # 1. Get current state
-    # 2. Calculate new phase/day
-    # 3. Update story_state
-    # 4. Check for deadline breaches
-    # 5. Generate any automatic events (arrivals, departures)
-    # 6. Create story snapshot
     pass
 
 
@@ -64,7 +55,6 @@ async def get_events(
     Returns:
         List of events with participants
     """
-    # SELECT from v_timeline with filters
     pass
 
 

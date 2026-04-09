@@ -35,7 +35,6 @@ PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "")
 REGION = os.environ.get("GOOGLE_CLOUD_REGION", "us-central1")
 AGENT_ENGINE_ID = os.environ.get("AGENT_ENGINE_ID", "")
 
-# Session store (in production, use Memory Bank or Redis)
 _sessions: dict = {}
 
 

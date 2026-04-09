@@ -1,9 +1,64 @@
+# ── Python ───────────────────────────────────────────────────────────────────
 __pycache__/
-*.pyc
-.env
-.terraform/
-*.tfstate*
-.terraform.lock.hcl
-node_modules/
-dist/
+*.py[cod]
+*.pyo
+*.pyd
 *.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+.venv/
+venv/
+env/
+
+# ── Environment & secrets (NEVER commit these) ────────────────────────────────
+.env
+.env.*
+!.env.template        # keep the template as documentation
+*.env
+
+# Google Cloud service account keys
+*service-account*.json
+*-service-account.json
+*-key.json
+credentials.json
+application_default_credentials.json
+
+# ── Terraform ─────────────────────────────────────────────────────────────────
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars           # may contain passwords / project IDs
+!*.tfvars.example  # keep examples for documentation
+
+# ── Node ──────────────────────────────────────────────────────────────────────
+node_modules/
+
+# ── Logs & temp ───────────────────────────────────────────────────────────────
+*.log
+*.tmp
+*.bak
+*.swp
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDEs ──────────────────────────────────────────────────────────────────────
+.idea/
+*.iml
+.vscode/
+
+# ── ADK / Agent Engine ────────────────────────────────────────────────────────
+# Local ADK session storage (created when you run adk web)
+.adk/

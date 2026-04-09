@@ -14,7 +14,6 @@ async def get_current_locations() -> list[dict]:
     Returns:
         List of locations with characters_present arrays.
     """
-    # SELECT from v_current_scene WHERE characters_present IS NOT NULL
     pass
 
 
@@ -34,9 +33,6 @@ async def move_character(
     Returns:
         Updated location and any collisions detected.
     """
-    # 1. Update character.current_location_id
-    # 2. Update last_seen_day and last_seen_phase
-    # 3. Run collision detection
     pass
 
 
@@ -92,7 +88,6 @@ async def detect_collisions() -> list[dict]:
     Returns:
         List of collision objects with type, details, and severity.
     """
-    # Complex query joining characters, relationships, locations, missions
     pass
 
 

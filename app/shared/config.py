@@ -16,7 +16,7 @@ class Config:
     region: str = os.getenv("GOOGLE_CLOUD_REGION", "us-central1")
 
     # Gemini
-    model_name: str = os.getenv("GEMINI_MODEL", "gemini-2.5-pro")
+    model_name: str = os.getenv("GEMINI_MODEL", "gemini-2.5-pro-preview-05-06")  # Vertex AI versioned string
     embedding_model: str = os.getenv("EMBEDDING_MODEL", "text-embedding-004")
 
     # AlloyDB (via MCP Toolbox for Databases)

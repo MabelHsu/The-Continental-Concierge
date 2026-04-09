@@ -19,9 +19,6 @@ async def lookup_character(name: str) -> dict:
         Character dossier including faction, location, traits, backstory,
         and recent events involving them.
     """
-    # SELECT * FROM v_character_dossier WHERE name ILIKE '%{name}%' OR alias ILIKE '%{name}%'
-    # Plus: recent events from event_participants
-    # Plus: active debts from debts_markers
     pass
 
 
@@ -35,8 +32,6 @@ async def lookup_rule(query: str) -> dict:
     Returns:
         Matching rules with full text, penalty, and exceptions.
     """
-    # If query is numeric: WHERE rule_number = {query}
-    # Else: WHERE title ILIKE '%{query}%' OR description ILIKE '%{query}%'
     pass
 
 
@@ -56,10 +51,6 @@ async def search_lore(query: str, category: Optional[str] = None, limit: int = 5
     Returns:
         Ranked list of lore chunks with relevance scores.
     """
-    # 1. Generate embedding for query using text-embedding-004
-    # 2. Call search_lore() function in AlloyDB
-    # 3. Optionally filter by category
-    # 4. Return ranked results
     pass
 
 
@@ -74,7 +65,6 @@ async def get_character_history(name: str, limit: int = 10) -> list[dict]:
     Returns:
         Chronological list of events involving this character.
     """
-    # JOIN events with event_participants on character_id
     pass
 
 
@@ -90,6 +80,4 @@ async def search_scenes(query: str, day_from: Optional[int] = None, day_to: Opti
     Returns:
         Ranked list of scene memories.
     """
-    # 1. Generate embedding
-    # 2. Call search_scenes() function in AlloyDB
     pass

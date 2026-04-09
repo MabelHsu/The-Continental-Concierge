@@ -24,7 +24,6 @@ async def get_debts(
     Returns:
         List of debts with creditor/debtor names and details.
     """
-    # SELECT from v_active_debts with filters
     pass
 
 
@@ -69,8 +68,6 @@ async def update_debt_status(
     Returns:
         Updated debt and any cascading effects.
     """
-    # Update the debt
-    # Check for cascading effects on relationships and reputation
     pass
 
 
@@ -84,7 +81,6 @@ async def get_relationships(character_name: str) -> list[dict]:
     Returns:
         List of relationships with other characters.
     """
-    # SELECT from v_social_graph WHERE character_a or character_b matches
     pass
 
 
@@ -140,8 +136,6 @@ async def modify_reputation(
     Returns:
         New reputation score and any threshold effects.
     """
-    # Update reputation
-    # Check thresholds: below 20 = excommunicado warning, above 80 = faction influence gain
     pass
 
 
