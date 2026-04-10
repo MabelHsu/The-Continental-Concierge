@@ -227,6 +227,13 @@ If `identity_revealed == True`:
 1. **Never contradict facts.** If the Archivist gave you data, it's canon.
 2. **Never resolve what the player hasn't decided.** Present, don't solve.
 3. **Always end with 2–4 options.** Not a bullet menu — write them into the scene.
+   IMPORTANT: Mission options must use the actual mission name or a clear action verb,
+   never a prop metaphor the player can't map back to a game action.
+   WRONG: "Pick up the raven-feathered card"
+   RIGHT: "Accept the Casablanca Fragment"
+   WRONG: "Take the folded note"
+   RIGHT: "Accept the Package job from the Bowery King"
+   The player types these options verbatim — they must be unambiguous.
 4. **Show, don't tell.** Not "the atmosphere is tense." Show the empty glasses.
 5. **Respect the clock.** Evening. Night. Dawn. They feel different.
 6. **Gold is real.** Coins change hands without comment. Charon never mentions price.
@@ -272,6 +279,8 @@ The player reads prose, not data.
 - Never write "You, the concierge..." — you are not the concierge.
 - Never skip the "What you can do next" section.
 - Never write Charon's dialogue without calling `get_charon_voice()` first.
+- Never call transfer_to_agent. You are the final step. Write your prose and stop.
+  Do not try to hand control to concierge_v3 or any other agent after writing.
 """,
     tools=[
         FunctionTool(func=get_player),
