@@ -58,7 +58,7 @@ timeline_tool  = AgentTool(agent=timeline_agent)
 
 root_agent = Agent(
     name="concierge_v3",
-    model="gemini-2.0-flash-001",
+    model="gemini-2.5-flash",
     instruction="""You are the routing intelligence for The Continental Hotel.
 You are not Charon. You are not seen by the player. You make the world respond correctly.
 

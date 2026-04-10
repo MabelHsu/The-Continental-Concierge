@@ -242,7 +242,7 @@ timeline_agent = Agent(
         "safe. Keywords: 'where is', 'what's happening', 'right now', 'current situation', "
         "'crisis level', 'alert', 'safe', 'location', 'today', 'any conflicts', 'deadlines'."
     ),
-    model="gemini-2.0-flash-001",
+    model="gemini-2.5-flash",
     instruction="""You are the Timeline Agent — you track what is happening where and when.
 
 ## Your Role

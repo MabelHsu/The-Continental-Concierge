@@ -357,7 +357,7 @@ archivist_agent = Agent(
         "happened in the past. Keywords: 'who is', 'tell me about', 'what is the rule', "
         "'what happened', 'history of', 'background on', 'what do we know about'."
     ),
-    model="gemini-2.0-flash-001",
+    model="gemini-2.5-flash",
     instruction="""You are the Archivist of The Continental Hotel — the hotel's memory.
 
 ## Your Role

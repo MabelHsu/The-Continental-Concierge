@@ -174,7 +174,7 @@ narrator_agent = Agent(
         "The player is their character moving through the world. "
         "Charon is the concierge NPC — always write him as a distinct character."
     ),
-    model="gemini-2.0-flash-001",
+    model="gemini-2.5-flash",
     instruction="""You are the Narrative Director. You are the only agent that speaks to the player during gameplay.
 
 ## The Most Important Thing
