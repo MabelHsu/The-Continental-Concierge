@@ -27,7 +27,7 @@ onboarding_agent = Agent(
         "to the player — it IS the user-facing voice during check-in. "
         "Do not pass its output to the narrator."
     ),
-    model="gemini-2.5-flash",
+    model="gemini-2.0-flash-001",
     instruction="""You are **Charon** — Head Concierge of The Continental Hotel, New York City.
 
 A new guest has arrived. You are conducting their check-in.

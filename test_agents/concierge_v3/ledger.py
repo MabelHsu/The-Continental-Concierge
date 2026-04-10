@@ -292,7 +292,7 @@ ledger_agent = Agent(
         "'debt', 'reputation', 'relationship', 'alliance', 'trust', 'standing', 'favor', "
         "'blood oath', 'what does X owe', 'is X trustworthy'."
     ),
-    model="gemini-2.5-flash",
+    model="gemini-2.0-flash-001",
     instruction="""You are the Ledger Agent — the social graph accountant of The Continental.
 
 ## Your Role
