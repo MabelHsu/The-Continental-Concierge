@@ -218,6 +218,13 @@ def assess_social_risk(character: str) -> dict:
 
 ledger_agent = Agent(
     name="ledger",
+    description=(
+        "Call this agent for ANY question about: debts, markers, blood oaths, who owes whom, "
+        "reputation scores, alliances, enmities, relationships between characters, favors, "
+        "whether someone can be trusted, or social standing. Keywords: 'owe', 'marker', "
+        "'debt', 'reputation', 'relationship', 'alliance', 'trust', 'standing', 'favor', "
+        "'blood oath', 'what does X owe', 'is X trustworthy'."
+    ),
     model="gemini-2.5-flash",
     instruction="""You are the Ledger Agent — the social graph accountant of The Continental.
 

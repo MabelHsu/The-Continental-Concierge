@@ -195,6 +195,13 @@ def get_upcoming_deadlines(urgency: str = None) -> dict:
 
 timeline_agent = Agent(
     name="timeline",
+    description=(
+        "Call this agent for ANY question about: what is happening RIGHT NOW, current events, "
+        "where someone is located, the current crisis or alert level, today's situation, "
+        "scheduling conflicts, dangerous co-presence, upcoming deadlines, or whether it is "
+        "safe. Keywords: 'where is', 'what's happening', 'right now', 'current situation', "
+        "'crisis level', 'alert', 'safe', 'location', 'today', 'any conflicts', 'deadlines'."
+    ),
     model="gemini-2.5-flash",
     instruction="""You are the Timeline Agent — you track what is happening where and when.
 

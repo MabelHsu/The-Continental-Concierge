@@ -2,9 +2,10 @@
 
 Run the multi-agent system:
 ```bash
-# From the project root
+pip install google-adk --break-system-packages -q
+cd ~/The-Continental-Concierge
+git pull origin main          # stays clean after the reset above
 adk web test_agents/
-# Select "concierge_v2" from the agent dropdown in the browser UI
 ```
 
 ---

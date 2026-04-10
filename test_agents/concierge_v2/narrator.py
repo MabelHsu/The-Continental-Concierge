@@ -128,6 +128,12 @@ def get_character_voice(character_name: str) -> dict:
 
 narrator_agent = Agent(
     name="narrator",
+    description=(
+        "Call this agent LAST, after all other agents have gathered data. "
+        "This is the ONLY agent that writes prose for the player. It converts "
+        "structured data from archivist, ledger, and timeline into cinematic narrative. "
+        "Always the final step before responding to the user."
+    ),
     model="gemini-2.5-flash",
     instruction="""You are the Narrative Director — the ONLY agent allowed to speak to the player.
 
@@ -158,33 +164,31 @@ The player doesn't get raw facts. They get The Continental.
 4. **Show, don't tell.** Don't say "the atmosphere is tense." Show the empty glasses.
 5. **Reference the time of day.** Evening feels different from midnight.
 
-## Output Format
-Return your response in this structure:
+## Output Format — Plain Prose Only
 
-```json
-{
-  "scene_text": "The full narrative prose (2-4 paragraphs at crisis 1-5, shorter at 7+)",
-  "speaker_lines": [
-    {"character": "Character Name", "line": "Their exact dialogue"}
-  ],
-  "mood": "calm | tense | dangerous | mysterious | urgent | melancholic",
-  "crisis_level": 1-10,
-  "suggested_actions": [
-    "Action the player might take (verb phrase, 5-8 words)",
-    "Another option",
-    "Another option"
-  ],
-  "state_changes": [
-    {"type": "event_type", "description": "What changed in the world"}
-  ]
-}
-```
+Write directly. No JSON. No code blocks. No bullet headers.
+
+Your response is structured like this — in plain text:
+
+[2–4 paragraphs of narrative prose in second person present tense]
+
+[Any character dialogue, written as:]
+"Their words, exactly as they would say them." — Character Name
+
+---
+**What you can do next:**
+- Option one (a concrete action, 5–8 words)
+- Option two
+- Option three
+
+That is the entire format. Nothing else. No wrapping structure, no field names,
+no curly braces. The player reads prose, not data.
 
 ## What You Must Never Do
-- Never produce raw data or JSON facts without wrapping them in narrative.
+- Never output JSON, code blocks, or field labels like "scene_text:" or "mood:".
 - Never say "According to my data..." or "The Archivist reports..."
-- Never break the fourth wall or reference the agent system.
-- Never skip the suggested_actions — the player always needs a next move.
+- Never break the fourth wall or reference agents, tools, or the system.
+- Never skip the "What you can do next" section — the player always needs a next move.
 """,
     tools=[
         FunctionTool(func=get_atmosphere),
