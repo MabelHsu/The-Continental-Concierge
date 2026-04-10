@@ -1,39 +1,48 @@
 """
 Continental Concierge — Phase 1d: Multi-Agent Orchestrator
 
-Adds four sub-agents to the root orchestrator:
-  - Archivist:  character lookups, lore, hotel rules
-  - Narrator:   THE ONLY AGENT THAT WRITES PROSE
-  - Ledger:     debts, markers, reputation, relationships
-  - Timeline:   world state, locations, collision detection
+ADK PATTERN USED HERE — Important to understand:
 
-How ADK sub-agents work:
-  When adding agents to `sub_agents`, the root agent's LLM can decide
-  to "transfer" to one of them mid-conversation. The framework handles
-  the actual hand-off. The sub-agent runs, produces output, and control
-  returns to the orchestrator (or the sub-agent can transfer further).
+  WRONG pattern (what we had before):
+    sub_agents = [archivist, ledger, timeline, narrator]
+    → When orchestrator "transfers" to archivist, archivist owns the response.
+    → Orchestrator never gets the data back. Can't chain to narrator.
+    → Result: user sees raw JSON from archivist.
 
-  The key principle: routing is LLM-driven, guided by your system prompt.
-  The better your routing instructions, the more predictably it routes.
+  CORRECT pattern (what we use now):
+    tools      = [AgentTool(archivist), AgentTool(ledger), AgentTool(timeline)]
+    sub_agents = [narrator]
+    → AgentTool wraps an agent as a callable tool.
+    → Orchestrator calls archivist_tool(), gets data BACK as a tool result.
+    → Orchestrator then transfers to narrator with that data.
+    → Result: user sees prose from narrator. ✓
+
+  Rule of thumb:
+    - Data agents that feed INTO other agents → AgentTool
+    - Agents that produce the FINAL response → sub_agents
 
 Run with:
   adk web test_agents/
   → open http://localhost:8000
   → select "concierge_v2" from the agent dropdown
-
-Test sequence (see TEST_QUERIES below for the full list):
-  1. "Who is Winston?" → should route to Archivist, then Narrator
-  2. "Does John owe anyone a marker?" → Ledger → Narrator
-  3. "What's happening right now?" → Timeline → Narrator
-  4. "Tell me about the rules of sanctuary." → Archivist → Narrator
 """
 
 from google.adk.agents import Agent
+from google.adk.tools.agent_tool import AgentTool
 
 from .archivist import archivist_agent
 from .narrator import narrator_agent
 from .ledger import ledger_agent
 from .timeline import timeline_agent
+
+
+# ── Wrap data agents as tools ─────────────────────────────────────────────────
+# AgentTool means the orchestrator calls these like function tools and gets
+# their output back — it does NOT hand over control to them permanently.
+
+archivist_tool = AgentTool(agent=archivist_agent)
+ledger_tool    = AgentTool(agent=ledger_agent)
+timeline_tool  = AgentTool(agent=timeline_agent)
 
 
 # ── Root Orchestrator ─────────────────────────────────────────────────────────
@@ -43,98 +52,63 @@ root_agent = Agent(
     model="gemini-2.5-flash",
     instruction="""You are the Concierge Orchestrator for The Continental Hotel, New York City.
 
-## Your Role
-You are the routing intelligence — the invisible hand that coordinates all specialist agents.
-You parse every request, decide which experts to consult, then hand off to the Narrator for delivery.
+## Your Tools
 
-## The Most Important Rule
-YOU NEVER WRITE USER-FACING PROSE.
-Not a single sentence of narrative, description, or dialogue.
-All user-facing text comes from the Narrator agent — always.
-If you feel tempted to "just quickly answer" — don't. Route to the Narrator.
+- `archivist` — facts about characters, rules, lore, history
+- `ledger`    — debts, markers, reputation, relationships
+- `timeline`  — current world state, locations, collisions, deadlines
+- `narrator`  — the ONLY voice to the player. Transfer to this LAST, always.
 
-## Routing Rules — Exact Triggers
+## Decision Rules — Pick Your Path Before Acting
 
-### Call `archivist` when the query contains:
-- "who is", "tell me about [person]", "background on", "character profile"
-- "what is the rule", "what are the rules", "what happens if", "is it allowed"
-- "what happened", "history of", "what do we know about", "lore"
+Read the query once. Classify it as ONE of these paths. Then execute the
+entire path without stopping.
 
-### Call `ledger` when the query contains:
-- "owe", "debt", "marker", "blood oath", "owes", "called in"
-- "reputation", "standing", "score", "how is X seen"
-- "relationship", "alliance", "enemy", "enmity", "trust", "trustworthy"
-- "risk", "should I let X in", "what's the risk with X"
+### Path A — Single domain query
+Query touches only one domain → call that one tool → transfer to narrator.
 
-### Call `timeline` when the query contains:
-- "where is", "where are", "location of", "is X here"
-- "what's happening", "current situation", "right now", "today"
-- "crisis level", "alert", "how bad is it", "is it safe"
-- "any conflicts", "any problems", "deadlines", "what events"
+Examples:
+- "Who is Charon?" → archivist → narrator
+- "What does John owe?" → ledger → narrator
+- "Where is Winston?" → timeline → narrator
+- "What's the rule about sanctuary?" → archivist → narrator
 
-### Call `narrator` — ALWAYS LAST, for every response:
-- After archivist, ledger, or timeline returns data → call narrator
-- The narrator converts structured data into prose for the player
-- Never skip this step. The player always gets narrative, never raw data.
+### Path B — Multi-domain query
+Query explicitly asks about multiple things ("everything about X", "who he is
+AND what he owes AND where he is") → call ALL relevant tools first, in order,
+then transfer to narrator ONCE with everything combined.
 
-## Routing Protocol — Follow This Every Time
+Steps for "Tell me everything about John Wick":
+1. Call `archivist` → get character profile
+2. Call `ledger` → get markers and reputation
+3. Call `timeline` → get current location and world state
+4. Transfer to `narrator` with results from all three steps above
 
-1. Read the player's query.
-2. Identify which domain(s) it touches using the trigger words above.
-3. Call the matching specialist agent(s) — one at a time, in order.
-4. After all specialists have responded, transfer to `narrator` with their outputs.
-5. Done. The narrator handles the rest.
+Do NOT transfer to narrator after step 1 or 2. Wait until all data is collected.
 
-If unsure which specialist to call → default to `archivist`.
-If the query clearly asks about NOW or WHERE → call `timeline` first.
-If the query clearly asks about debts/trust/reputation → call `ledger` first.
+### Path C — Situation query
+Query asks about the current state of things ("what's going on", "is it safe",
+"situation report") → call `timeline` → transfer to narrator.
 
-## Concrete Routing Examples
+## Hard Rules
 
-**"Who is Sofia?"**
-→ archivist → narrator
+- Call each tool AT MOST ONCE per query.
+- Do NOT call archivist twice. Decide once, call once.
+- Do NOT transfer to narrator until you have ALL the data the query needs.
+- Do NOT answer the player yourself. narrator does that.
+- If you realize mid-query you need another tool — call it before transferring to narrator.
 
-**"Does John owe Winston anything?"**
-→ ledger → narrator
-
-**"Where is the Adjudicator right now?"**
-→ timeline → narrator
-
-**"What's the current crisis level?"**
-→ timeline → narrator
-
-**"Is it safe to let Viktor in?"**
-→ ledger (his reputation/risk) → timeline (collision detection) → narrator
-
-**"Tell me about John — who he is, what he owes, and where he is."**
-→ archivist → ledger → timeline → narrator
-
-## What You Output (Before Handing to Narrator)
-When you've collected specialist outputs and are ready to hand off, structure your
-context for the Narrator like this:
-
-```
-ROUTING SUMMARY:
-- Sources consulted: [archivist, ledger, timeline]
-- Key facts: [bullet list of critical structured data]
-- Narrative guidance: [tone, mood, crisis level for this response]
-- Suggested focus: [what the Narrator should emphasize]
-```
-
-Then transfer to the narrator.
-
-## Edge Cases
-- If a request is ambiguous, route to the Narrator to ask for clarification (in character).
-- If specialists return conflicting data, note the conflict in your handoff — the Narrator
-  presents it as mystery or uncertainty.
-- If a request involves an excommunicado character (John Wick), always include a note
-  to the Narrator that services are suspended — this should color the prose.
+## What to Tell Narrator
+When transferring, summarize what you collected:
+"Character: [name]. Data from: [archivist/ledger/timeline]. Key flags: [excommunicado, alert level 8, outstanding markers, etc.]"
 """,
+    tools=[
+        archivist_tool,
+        ledger_tool,
+        timeline_tool,
+    ],
     sub_agents=[
-        archivist_agent,
         narrator_agent,
-        ledger_agent,
-        timeline_agent,
     ],
 )
 

@@ -67,6 +67,41 @@ _RELATIONSHIPS = [
 ]
 
 
+# ── Name normalization ────────────────────────────────────────────────────────
+# The LLM may pass "John Wick", "john wick", "John", or "john" — all must
+# resolve to the canonical key "john" used in the mock data.
+
+_NAME_ALIASES = {
+    "john": "john",
+    "john wick": "john",
+    "wick": "john",
+    "baba yaga": "john",
+    "winston": "winston",
+    "winston scott": "winston",
+    "sofia": "sofia",
+    "sofia al-azwar": "sofia",
+    "charon": "charon",
+    "berrada": "berrada",
+    "santino": "santino",
+    "santino d'antonio": "santino",
+    "d'antonio": "santino",
+    "the adjudicator": "adjudicator",
+    "adjudicator": "adjudicator",
+}
+
+def _normalize(name: str) -> str:
+    """Map a free-text character name to its canonical data key."""
+    key = name.lower().strip()
+    # Exact alias match
+    if key in _NAME_ALIASES:
+        return _NAME_ALIASES[key]
+    # Partial match — "john w" → "john"
+    for alias, canonical in _NAME_ALIASES.items():
+        if key in alias or alias in key:
+            return canonical
+    return key  # Fall through: use as-is
+
+
 # ── Mock tool functions ───────────────────────────────────────────────────────
 
 def get_markers(character: str, role: str = "any") -> dict:
@@ -74,13 +109,13 @@ def get_markers(character: str, role: str = "any") -> dict:
     Get all markers (blood oath debts) involving a character.
 
     Args:
-        character: The character name to query.
-        role: 'debtor', 'holder', or 'any' (default).
+        character: The character name to query (handles full names like "John Wick").
+        role: 'debtor' (they owe), 'holder' (they are owed), or 'any' (default).
 
     Returns:
         All matching markers with status and obligations.
     """
-    key = character.lower()
+    key = _normalize(character)
     results = []
     for m in _MARKERS:
         if role == "debtor" and m["debtor"] == key:
@@ -93,6 +128,7 @@ def get_markers(character: str, role: str = "any") -> dict:
     outstanding = [m for m in results if m["status"] == "outstanding"]
     return {
         "character": character,
+        "canonical_key": key,
         "total_markers": len(results),
         "outstanding_markers": len(outstanding),
         "markers": results,
@@ -103,24 +139,54 @@ def get_markers(character: str, role: str = "any") -> dict:
     }
 
 
+def get_all_outstanding_markers() -> dict:
+    """
+    Get every outstanding (uncalled, unfulfilled) marker across all characters.
+    Use this when asked about "all markers", "outstanding markers", or
+    "who owes what" without a specific character name.
+
+    Returns:
+        All outstanding markers grouped by debtor.
+    """
+    outstanding = [m for m in _MARKERS if m["status"] == "outstanding"]
+    by_debtor = {}
+    for m in outstanding:
+        debtor = m["debtor"]
+        if debtor not in by_debtor:
+            by_debtor[debtor] = []
+        by_debtor[debtor].append(m)
+
+    return {
+        "total_outstanding": len(outstanding),
+        "by_debtor": by_debtor,
+        "markers": outstanding,
+        "summary": [
+            f"{m['debtor']} owes {m['holder']}: {m['obligation']}"
+            for m in outstanding
+        ],
+    }
+
+
 def check_marker_between(debtor: str, holder: str) -> dict:
     """
     Check if a specific marker exists between two characters.
 
     Args:
-        debtor: The character who owes the debt.
+        debtor: The character who owes the debt (handles "John Wick" etc.).
         holder: The character who holds the debt.
 
     Returns:
         The marker details, or a no-marker response.
     """
-    d, h = debtor.lower(), holder.lower()
+    d = _normalize(debtor)
+    h = _normalize(holder)
     for m in _MARKERS:
         if m["debtor"] == d and m["holder"] == h:
             return {"found": True, "marker": m}
     return {
         "found": False,
         "message": f"No marker between debtor '{debtor}' and holder '{holder}'.",
+        "normalized": {"debtor": d, "holder": h},
     }
 
 
@@ -129,12 +195,12 @@ def get_reputation(character: str) -> dict:
     Get the reputation score and standing for a character.
 
     Args:
-        character: Character name.
+        character: Character name (handles full names like "John Wick").
 
     Returns:
         Reputation data including score, faction, and trend.
     """
-    key = character.lower()
+    key = _normalize(character)
     if key in _REPUTATION:
         rep = _REPUTATION[key]
         warnings = []
@@ -142,8 +208,8 @@ def get_reputation(character: str) -> dict:
             warnings.append("Reputation critically low — excommunicado risk.")
         if rep["faction"] == "excommunicado":
             warnings.append("Character is excommunicado — services suspended.")
-        return {"found": True, "character": character, "reputation": rep, "warnings": warnings}
-    return {"found": False, "character": character, "message": "No reputation record on file."}
+        return {"found": True, "character": character, "canonical_key": key, "reputation": rep, "warnings": warnings}
+    return {"found": False, "character": character, "canonical_key": key, "message": "No reputation record on file."}
 
 
 def get_relationships(character: str) -> dict:
@@ -151,15 +217,16 @@ def get_relationships(character: str) -> dict:
     Get all known relationships for a character.
 
     Args:
-        character: Character name.
+        character: Character name (handles full names like "John Wick").
 
     Returns:
         List of relationships with type and strength score.
     """
-    key = character.lower()
+    key = _normalize(character)
     rels = [r for r in _RELATIONSHIPS if r["a"] == key or r["b"] == key]
     return {
         "character": character,
+        "canonical_key": key,
         "relationships": rels,
         "alliance_count": len([r for r in rels if r["type"] == "alliance"]),
         "enmity_count": len([r for r in rels if r["type"] == "enmity"]),
@@ -242,11 +309,16 @@ You track the web of obligations that bind the underworld together:
 4. Always call `assess_social_risk` when the query implies a major decision.
 
 ## Tool Selection Guide
-- "Does X owe Y?" / "What's X's debt?" → `check_marker_between(debtor, holder)`
-- "All of X's debts" / "X's markers" → `get_markers(character)`
+- "Does X owe Y?" / "What's X's debt to Y?" → `check_marker_between(debtor, holder)`
+- "All of X's markers" / "What does X owe?" → `get_markers(character)`
+- "All outstanding markers" / "Who owes what?" (no specific character) → `get_all_outstanding_markers()`
 - "X's reputation" / "How is X seen?" → `get_reputation(character)`
 - "X's allies / enemies" → `get_relationships(character)`
-- "Should we trust X?" / "What's at stake?" → `assess_social_risk(character)`
+- "Should we trust X?" / "What's at stake with X?" → `assess_social_risk(character)`
+
+## Name Handling
+Tools accept full names: "John Wick", "Sofia Al-Azwar", "Santino D'Antonio".
+You do NOT need to normalize names — the tools handle it internally.
 
 ## Output Format
 ```json
@@ -268,6 +340,7 @@ You track the web of obligations that bind the underworld together:
 """,
     tools=[
         FunctionTool(func=get_markers),
+        FunctionTool(func=get_all_outstanding_markers),
         FunctionTool(func=check_marker_between),
         FunctionTool(func=get_reputation),
         FunctionTool(func=get_relationships),

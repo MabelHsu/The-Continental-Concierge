@@ -71,6 +71,23 @@ _CHARACTERS = {
         "known_associates": ["winston"],
         "marker_balance": 0,
     },
+    "santino": {
+        "name": "Santino D'Antonio",
+        "role": "High Table Member (D'Antonio crime family)",
+        "reputation": 55,
+        "status": "deceased",
+        "faction": "High Table",
+        "history": (
+            "Held a blood oath marker on John Wick — the price of John's retirement. "
+            "Called the marker, forcing John to assassinate his own sister, Gianna D'Antonio, "
+            "to secure Santino's seat at the High Table. Subsequently placed a contract on "
+            "John's life to eliminate the only witness. Killed by John Wick in the "
+            "Continental's Continental Hall — a direct violation of the rules of sanctuary, "
+            "which triggered John's excommunication."
+        ),
+        "known_associates": ["john", "gianna"],
+        "marker_balance": 0,
+    },
     "berrada": {
         "name": "Berrada",
         "role": "Keeper of the Elder's Books",

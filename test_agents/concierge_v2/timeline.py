@@ -68,24 +68,64 @@ def get_world_state() -> dict:
     }
 
 
+# ── Name normalization ────────────────────────────────────────────────────────
+# Mirrors the same pattern in ledger.py — LLM passes full names like
+# "John Wick" but _LOCATIONS keys are canonical short names like "john".
+
+_NAME_ALIASES = {
+    "john": "john",
+    "john wick": "john",
+    "wick": "john",
+    "baba yaga": "john",
+    "winston": "winston",
+    "winston scott": "winston",
+    "sofia": "sofia",
+    "sofia al-azwar": "sofia",
+    "charon": "charon",
+    "berrada": "berrada",
+    "santino": "santino",
+    "santino d'antonio": "santino",
+    "the adjudicator": "the adjudicator",
+    "adjudicator": "the adjudicator",
+}
+
+def _normalize(name: str) -> str:
+    """Map a free-text character name to its canonical location key."""
+    key = name.lower().strip()
+    if key in _NAME_ALIASES:
+        return _NAME_ALIASES[key]
+    for alias, canonical in _NAME_ALIASES.items():
+        if key in alias or alias in key:
+            return canonical
+    return key
+
+
 def get_current_locations(characters: list = None) -> dict:
     """
     Get the current known locations of characters.
 
     Args:
-        characters: Optional list of character names. If None, returns all.
+        characters: Optional list of character names. Handles full names like
+                    "John Wick", "The Adjudicator". If None, returns all locations.
 
     Returns:
         Location data for each requested character.
     """
     if characters is None:
-        return {"locations": _LOCATIONS, "as_of": f"Day {_WORLD_STATE['current_day']}, {_WORLD_STATE['current_phase']}"}
+        return {
+            "locations": _LOCATIONS,
+            "as_of": f"Day {_WORLD_STATE['current_day']}, {_WORLD_STATE['current_phase']}",
+        }
 
     result = {}
     for name in characters:
-        key = name.lower()
-        result[key] = _LOCATIONS.get(key, {"location": "unknown", "since_phase": "unknown"})
-    return {"locations": result, "as_of": f"Day {_WORLD_STATE['current_day']}, {_WORLD_STATE['current_phase']}"}
+        canonical = _normalize(name)
+        data = _LOCATIONS.get(canonical, {"location": "unknown — not currently tracked", "since_phase": "unknown"})
+        result[name] = {"canonical_key": canonical, **data}
+    return {
+        "locations": result,
+        "as_of": f"Day {_WORLD_STATE['current_day']}, {_WORLD_STATE['current_phase']}",
+    }
 
 
 def get_recent_events(day: int = None, phase: str = None, character: str = None, limit: int = 5) -> dict:
@@ -95,7 +135,7 @@ def get_recent_events(day: int = None, phase: str = None, character: str = None,
     Args:
         day: Filter by day number. None for all days.
         phase: Filter by time phase (dawn, morning, etc.). None for all.
-        character: Filter by character involved. None for all.
+        character: Character name filter — handles full names like "John Wick".
         limit: Maximum events to return (default 5).
 
     Returns:
@@ -108,7 +148,7 @@ def get_recent_events(day: int = None, phase: str = None, character: str = None,
     if phase is not None:
         events = [e for e in events if e["phase"] == phase]
     if character is not None:
-        char_key = character.lower()
+        char_key = _normalize(character)
         events = [e for e in events if char_key in [c.lower() for c in e["characters"]]]
 
     events.reverse()  # Most recent first
@@ -213,17 +253,36 @@ You maintain temporal and spatial consistency for The Continental:
 - **World state**: Current day, phase, alert level, active crises.
 
 ## How You Work
-1. Receive a query or action from the Orchestrator.
-2. For **queries**: call the relevant lookup tool.
-3. Always run `detect_collisions()` when the query involves movement or major events.
-4. Return STRUCTURED DATA — no prose, no narrative.
+1. Receive a query from the Orchestrator.
+2. Call exactly the tool(s) listed below for that query type — no more.
+3. Return STRUCTURED DATA — no prose, no narrative.
 
-## Tool Selection Guide
-- "What's happening?" / "Current situation?" → `get_world_state()`
-- "Where is X?" / "Who is at the Continental?" → `get_current_locations(characters)`
-- "What happened today?" / "Events involving X?" → `get_recent_events(day, character)`
-- "Any conflicts? Any danger?" → `detect_collisions()`
-- "What deadlines are coming?" → `get_upcoming_deadlines(urgency)`
+## Tool Selection Guide — One Tool Per Query Type
+
+"What's happening?" / "Current situation?" / "Crisis level?" / "Alert level?"
+→ call `get_world_state()` ONCE. Done.
+
+"Where is X?" / "Is X here?" / "X's location?"
+→ call `get_current_locations(characters=["X"])` ONCE. Done.
+→ Also call `detect_collisions()` if the character is known to be dangerous.
+
+"Any dangerous situations?" / "Any conflicts?" / "Is it safe?"
+→ call `detect_collisions()` ONCE. Done. Do NOT also call `get_world_state`.
+
+"What deadlines are coming?" / "Upcoming obligations?"
+→ call `get_upcoming_deadlines()` ONCE. Done.
+
+"What events happened today?" / "What happened involving X?"
+→ call `get_recent_events(character="X")` ONCE. Done.
+
+## Important
+- Call each tool at most ONCE per query. If you already called it, do not call it again.
+- `detect_collisions()` is for danger/safety questions only — not required for every query.
+- `get_world_state()` already includes active events — no need to also call `get_recent_events` unless a specific character's history is needed.
+
+## Name Handling
+Tools accept full names: "John Wick", "The Adjudicator", "Winston Scott".
+You do NOT need to normalize — tools handle it internally.
 
 ## Output Format
 ```json
