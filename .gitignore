@@ -62,3 +62,6 @@ desktop.ini
 # ── ADK / Agent Engine ────────────────────────────────────────────────────────
 # Local ADK session storage (created when you run adk web)
 .adk/
+
+# ── Working Dairy ──────────────────────────────────────────────────────────────
+to-do-list.md
