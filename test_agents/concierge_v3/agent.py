@@ -110,37 +110,52 @@ Read the player's message and classify it into exactly ONE path:
   Charon should present these as quiet suggestions, not explicit contracts."
 
 ### PATH E — Player accepts a mission
-TRIGGERS — any of these patterns mean the player is accepting a specific mission:
-  "I'll take [mission name or keyword]"
-  "Accept [mission]"
-  "I'll do it" / "I'll handle it"
-  "Pick up the [object]" — the narrator uses metaphorical objects for missions:
-      raven-feathered card / raven card  → Casablanca Fragment  (mission_id=3)
-      folded note / small note           → A Package, Discreetly Moved (mission_id=2)
-      tablet / Osaka                     → The Osaka Arrangement (mission_id=1)
-  Any mention of a mission title keyword: "Osaka", "Casablanca", "Package", "parcel"
 
-REQUIRED: You MUST call `accept_mission` before transferring to narrator.
-  Map the player's words to the correct mission_id using the list above.
-  If ambiguous, pick the mission most recently discussed.
-→ Call `accept_mission(session_id="test-session-001", mission_id=N)`
-→ Transfer to `narrator` with: mission title, outcome of accept_mission call,
-  instruction "Charon acknowledges with a single quiet line. No fanfare."
+TRIGGERS (any of these = PATH E, no exceptions):
+  "I'll take [anything]"
+  "I'll handle [anything]"
+  "I'll do it"
+  "Accept [anything]"
+  Any sentence where the player expresses willingness to take on a job/matter/arrangement
+
+MANDATORY SEQUENCE — do not skip any step:
+  Step E1. Call `get_available_missions(session_id="test-session-001")` to get the current
+           mission list with IDs. You need this because mission IDs are not in player state.
+  Step E2. Match what the player said to a mission title in the list.
+           Keywords: "Osaka" → The Osaka Arrangement; "Casablanca" → The Casablanca Fragment;
+           "package" / "parcel" / "Bowery" → A Package, Discreetly Moved.
+           If ambiguous, use the highest-priority available mission.
+  Step E3. Call `accept_mission(session_id="test-session-001", mission_id=<matched ID>)`.
+  Step E4. Transfer to `narrator` with: the mission title, the accept_mission result,
+           and this instruction: "Charon acknowledges the acceptance with a single quiet
+           line. No fanfare. One sentence only."
+
+YOU MUST COMPLETE STEPS E1–E3 BEFORE TRANSFERRING TO NARRATOR.
+If you transfer to narrator without calling accept_mission, the game state will be wrong.
 
 ### PATH F — Player reports mission outcome
-TRIGGERS — any of these patterns mean the player is completing/failing their active mission:
-  "[matter/job/thing] is concluded / done / finished / complete"
-  "Mission complete" / "It's done"
-  "I failed" / "Complications arose" / "It went wrong"
-  Any past-tense reference to concluding the active mission
 
-REQUIRED: You MUST call `complete_mission` before transferring to narrator.
-  Determine outcome from tone: concluded/done/finished → "success";
-  failed/wrong/complicated → "failure" or "complicated".
-→ Call `complete_mission(session_id="test-session-001", outcome="success"|"failure"|"complicated")`
-→ Transfer to `narrator` with: complete_mission result (includes gold/rep rewards),
-  instruction "Render the reward scene. Charon acknowledges quietly. Gold changes
-  hands without comment."
+TRIGGERS (any of these = PATH F, no exceptions):
+  "[anything] is concluded"
+  "[anything] is done / finished / complete / over"
+  "The matter is [past tense verb]"
+  "I've concluded / finished / completed [anything]"
+  "Mission [done/complete/failed]"
+  "I failed" / "It went wrong" / "Complications"
+  Any sentence where the player reports that their active mission has ended
+
+MANDATORY SEQUENCE — do not skip any step:
+  Step F1. Determine outcome from tone:
+           positive / neutral → "success"
+           negative / failure / complications → "failure" or "complicated"
+  Step F2. Call `complete_mission(session_id="test-session-001", outcome=<determined>)`.
+  Step F3. Transfer to `narrator` with: the complete_mission result (it contains gold and
+           reputation rewards), and this instruction: "Render the reward scene. Charon
+           acknowledges quietly. Gold coins change hands without comment. Show the
+           rep/gold change in the scene without stating numbers directly."
+
+YOU MUST COMPLETE STEPS F1–F2 BEFORE TRANSFERRING TO NARRATOR.
+If you transfer to narrator without calling complete_mission, rewards will not be applied.
 
 ### PATH G — Multi-domain queries
 Anything that needs 2+ specialists ("Tell me everything about X",
@@ -191,7 +206,7 @@ Charon should be nearby but not intrusive."
         narrator_agent,     # Takes over for final prose (when onboarding complete)
     ],
     generate_content_config={
-        "temperature": 0.5,
+        "temperature": 0.3,
         "max_output_tokens": 4096,
     },
 )
