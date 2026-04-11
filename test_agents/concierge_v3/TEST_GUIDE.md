@@ -293,7 +293,24 @@ This is the most important qualitative test. Verify the player is their *charact
 
 ### E3 — Session ID consistency
 
-All tool calls in the Events panel should show `session_id="test-session-001"`. If any tool call omits the session ID or uses a different value, the routing is broken.
+Session ID only appears in tools that touch player state. Not every tool takes one.
+
+**Should always show `session_id="test-session-001"`:**
+- `get_player` — reads player state
+- `update_player` — writes onboarding fields
+- `complete_onboarding` — finalises onboarding
+- `get_available_missions` — filtered by player reputation
+- `accept_mission` — assigns mission to player
+- `complete_mission` — resolves active mission
+
+**Do NOT take session_id — this is correct:**
+- `get_charon_voice` — static voice reference, no player context needed
+- `get_atmosphere` — takes `crisis_level` (int), not session
+- `get_character_voice` — takes `character_name` (str), not session
+
+If a player-state tool is called without `session_id="test-session-001"`, or with a
+different session ID, the routing is broken. Narrator utility tools not showing a
+session_id is expected and correct.
 
 ---
 
