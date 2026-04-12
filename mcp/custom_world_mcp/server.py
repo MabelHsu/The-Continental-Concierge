@@ -12,7 +12,6 @@ import json
 import os
 
 import asyncpg
-
 from mcp.server.fastmcp import FastMCP
 
 # ── Server Setup ──────────────────────────────────────────────
