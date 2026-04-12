@@ -63,6 +63,6 @@ desktop.ini
 # Local ADK session storage (created when you run adk web)
 .adk/
 
-# ── Working Dairy ──────────────────────────────────────────────────────────────
+# ── Working diary / local reports ────────────────────────────────────────────
 to-do-list.md
 BLOCKER-PASS-REPORT.md
