@@ -1,0 +1,108 @@
+name: CI
+
+# Lightweight pre-merge checks for The Continental Concierge.
+# Intentionally narrow: lint + import sanity only — no AlloyDB, no Vertex AI,
+# no secrets. The full eval harness (pytest evals/) and schema-level tests
+# run separately because they need a Postgres service container and a real
+# Vertex AI project. Those belong in a nightly workflow, not on every push.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ruff
+        run: pip install "ruff>=0.5.0"
+
+      - name: ruff check
+        # `--output-format=github` surfaces findings as inline PR annotations.
+        run: ruff check . --output-format=github
+
+      - name: ruff format check
+        # Non-destructive; just verifies nothing would be reformatted.
+        run: ruff format --check .
+
+  import-smoke:
+    name: Import smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install runtime dependencies
+        # We do NOT install the MCP sidecar requirements here — those have a
+        # narrower pin set meant for the Cloud Run sidecar image.
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Import all first-party modules
+        # This catches the classic "typo'd import" failure mode (e.g. the
+        # generate_embedding import bug in evals/memory_retrieval_eval.py).
+        # It does NOT exercise anything that needs a database or Vertex AI
+        # client — those are guarded by env vars and short-circuit to noop.
+        env:
+          GOOGLE_CLOUD_PROJECT: ""
+          AGENT_ENGINE_ID: ""
+          ALLOYDB_HOST: localhost
+          ALLOYDB_PORT: "5432"
+          ALLOYDB_DATABASE: continental
+          ALLOYDB_USER: continental_app
+          ALLOYDB_PASSWORD: ci-noop
+        run: |
+          python - <<'PY'
+          import importlib
+          import pkgutil
+          import sys
+
+          failed = []
+          for pkg_name in ("app", "mcp"):
+              try:
+                  pkg = importlib.import_module(pkg_name)
+              except ModuleNotFoundError:
+                  # Not every branch ships the mcp/ package; skip if absent.
+                  continue
+              except Exception as e:
+                  failed.append((pkg_name, repr(e)))
+                  continue
+              if not hasattr(pkg, "__path__"):
+                  continue
+              for mod in pkgutil.walk_packages(pkg.__path__, prefix=f"{pkg_name}."):
+                  try:
+                      importlib.import_module(mod.name)
+                  except Exception as e:  # noqa: BLE001 — we want the failure reason
+                      failed.append((mod.name, repr(e)))
+
+          if failed:
+              print("IMPORT FAILURES:")
+              for name, err in failed:
+                  print(f"  {name}: {err}")
+              sys.exit(1)
+          print("All first-party modules imported cleanly.")
+          PY

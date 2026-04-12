@@ -6,7 +6,20 @@
 -- ============================================================================
 
 CREATE EXTENSION IF NOT EXISTS vector;
-CREATE EXTENSION IF NOT EXISTS google_ml_tfe;
+
+-- google_ml_tfe enables the google_ml.embedding() SQL function in cloud AlloyDB.
+-- It is NOT available in AlloyDB Omni (local dev) — and not needed, because
+-- seed_embeddings.py generates vectors via the Python Vertex AI SDK instead.
+-- This block silently skips the extension when running on Omni.
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM pg_available_extensions WHERE name = 'google_ml_tfe'
+    ) THEN
+        CREATE EXTENSION IF NOT EXISTS google_ml_tfe;
+    END IF;
+END
+$$;
 
 -- ============================================================================
 -- OPERATIONAL STATE

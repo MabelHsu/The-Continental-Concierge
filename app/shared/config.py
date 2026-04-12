@@ -11,9 +11,16 @@ from dataclasses import dataclass, field
 class Config:
     """Application configuration loaded from environment."""
 
-    # Google Cloud
+    # Google Cloud.
+    # `location` is the Vertex AI standard env var name and matches
+    # .env.template. GOOGLE_CLOUD_REGION is kept as a transitional alias so
+    # stale shells don't break bring-up — remove once all deployments are
+    # on the new name.
     project_id: str = os.getenv("GOOGLE_CLOUD_PROJECT", "continental-concierge")
-    region: str = os.getenv("GOOGLE_CLOUD_REGION", "us-central1")
+    location: str = (
+        os.getenv("GOOGLE_CLOUD_LOCATION")
+        or os.getenv("GOOGLE_CLOUD_REGION", "us-central1")
+    )
 
     # Gemini
     model_name: str = os.getenv("GEMINI_MODEL", "gemini-2.5-pro-preview-05-06")  # Vertex AI versioned string

@@ -16,8 +16,30 @@ import json
 from dataclasses import dataclass
 from typing import Optional
 
-from app.tools.db import fetch_one, fetch_all, execute
-from app.tools.world_state_tools import initialize_story_state, increment_turn
+import pytest
+
+# Phase-3 tool layer guard — see memory_retrieval_eval.py for the rationale.
+# `initialize_story_state` and `increment_turn` don't yet exist on
+# `world_state_tools` (that file currently exports `get_world_state`,
+# `advance_time`, `get_events`, `create_story_snapshot`). The try/except
+# keeps `pytest evals/` collectable; the skip marker below makes pytest
+# skip this file cleanly until Phase 3 grows the missing helpers.
+try:
+    from app.tools.db import fetch_one, fetch_all, execute  # noqa: F401
+    from app.tools.world_state_tools import (  # noqa: F401
+        initialize_story_state,
+        increment_turn,
+    )
+    _PHASE3_READY = True
+    _PHASE3_SKIP_REASON = ""
+except ImportError as _import_err:
+    _PHASE3_READY = False
+    _PHASE3_SKIP_REASON = f"Phase 3 tool layer not ready: {_import_err}"
+
+pytestmark = pytest.mark.skipif(
+    not _PHASE3_READY,
+    reason=_PHASE3_SKIP_REASON,
+)
 
 
 @dataclass

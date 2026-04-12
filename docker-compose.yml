@@ -1,0 +1,35 @@
+# ============================================================
+# The Continental Concierge — Local Development Stack
+# ============================================================
+# AlloyDB Omni: free containerised AlloyDB for local dev.
+# Use this for Phases 2–4. Deploy to cloud AlloyDB (Terraform)
+# only when moving to staging / production.
+#
+# Quick start:
+#   docker compose up -d
+#   docker compose ps          # wait for healthy
+#   docker compose logs -f     # follow logs
+#   docker compose down        # stop (data persists in volume)
+#   docker compose down -v     # stop AND wipe data
+# ============================================================
+
+services:
+  alloydb-omni:
+    image: gcr.io/alloydb-omni/alloydb-omni:latest
+    container_name: continental-db
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-continental-dev}
+    ports:
+      - "5432:5432"
+    volumes:
+      - continental_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s   # AlloyDB Omni takes ~20s on first boot
+
+volumes:
+  continental_data:
+    name: continental-alloydb-data

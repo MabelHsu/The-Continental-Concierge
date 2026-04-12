@@ -15,8 +15,28 @@ Query categories tested:
 import asyncio
 from dataclasses import dataclass
 
-from app.tools.lore_tools import search_lore, get_character_dossier
-from app.tools.db import fetch_all, generate_embedding
+import pytest
+
+# Phase-3 tool layer guard.
+# `generate_embedding` and `get_character_dossier` are part of the real
+# lore/retrieval implementation that lands in Phase 3 (hybrid search +
+# Vertex AI embeddings). Until then the imports fail, which used to break
+# `pytest evals/` at collection time. The try/except keeps the module
+# importable; the pytestmark below skips the whole file cleanly instead
+# of crashing the test runner. Delete both once Phase 3 is merged.
+try:
+    from app.tools.lore_tools import search_lore, get_character_dossier  # noqa: F401
+    from app.tools.db import fetch_all, generate_embedding  # noqa: F401
+    _PHASE3_READY = True
+    _PHASE3_SKIP_REASON = ""
+except ImportError as _import_err:
+    _PHASE3_READY = False
+    _PHASE3_SKIP_REASON = f"Phase 3 tool layer not ready: {_import_err}"
+
+pytestmark = pytest.mark.skipif(
+    not _PHASE3_READY,
+    reason=_PHASE3_SKIP_REASON,
+)
 
 
 @dataclass

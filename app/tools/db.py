@@ -1,9 +1,12 @@
 """
 Database Connection Pool — AlloyDB via asyncpg.
 
-Two access patterns:
-  1. Direct async pool: used by all tool functions in async agent context.
-  2. Sync helpers: used sparingly by FastAPI startup and REST endpoints.
+Single access pattern: **the async pool.** Every caller — tool functions,
+FastAPI handlers, evals, CLI scripts — goes through `get_pool()` and the
+`fetch_all` / `fetch_one` / `fetch_val` / `execute` / `execute_many`
+helpers below. There is no synchronous wrapper and there should not be
+one: calling `asyncio.run_until_complete` from inside a running loop
+(which is what FastAPI gives you) raises `RuntimeError`.
 
 The MCP Toolbox for Databases handles read-only queries in production.
 This module handles all write operations and the player state layer
@@ -36,7 +39,7 @@ def _dsn() -> str:
     host = os.environ.get("ALLOYDB_HOST", "127.0.0.1")
     port = os.environ.get("ALLOYDB_PORT", "5432")
     db   = os.environ.get("ALLOYDB_DATABASE", "continental")
-    user = os.environ.get("ALLOYDB_USER", "concierge")
+    user = os.environ.get("ALLOYDB_USER", "continental_app")
     pw   = os.environ.get("ALLOYDB_PASSWORD", "")
     return f"postgresql://{user}:{pw}@{host}:{port}/{db}"
 
@@ -116,14 +119,10 @@ async def execute_many(query: str, args_list: list[tuple]) -> None:
         await conn.executemany(query, args_list)
 
 
-# ── Sync helpers (FastAPI startup / CLI only) ─────────────────────────────────
-# These run in a temporary event loop — not suitable for hot paths.
-
-def sync_fetch_all(query: str, *args: Any) -> list[dict]:
-    """Synchronous wrapper around fetch_all. Use only at startup or in CLI."""
-    return asyncio.get_event_loop().run_until_complete(fetch_all(query, *args))
-
-
-def sync_fetch_one(query: str, *args: Any) -> Optional[dict]:
-    """Synchronous wrapper around fetch_one. Use only at startup or in CLI."""
-    return asyncio.get_event_loop().run_until_complete(fetch_one(query, *args))
+# NOTE: `sync_fetch_all` / `sync_fetch_one` were removed in the Phase 2
+# blocker pass. They called `asyncio.get_event_loop().run_until_complete(...)`
+# which raises `RuntimeError` when called from inside a running event loop —
+# exactly what FastAPI's async handlers are. Callers should `await fetch_all`
+# / `await fetch_one` directly. If you need DB access from true sync code
+# (a CLI script, a script run under `python -m`), use `asyncio.run(...)`
+# at the script entry point, not a wrapper here.

@@ -28,7 +28,7 @@ from pydantic import BaseModel
 from google.cloud import aiplatform
 from vertexai.preview import agent_engines
 
-from app.tools.db import close_pool, sync_fetch_all, sync_fetch_one
+from app.tools.db import close_pool, fetch_all
 from app.tools.player_tools import (
     get_player,
     create_player_character,
@@ -53,7 +53,11 @@ app = FastAPI(
 # ── Configuration ─────────────────────────────────────────────────────────────
 
 PROJECT_ID      = os.environ.get("GOOGLE_CLOUD_PROJECT", "")
-REGION          = os.environ.get("GOOGLE_CLOUD_REGION", "us-central1")
+# GOOGLE_CLOUD_LOCATION matches the Vertex AI standard env var name and the
+# value documented in .env.template. (Fallback to GOOGLE_CLOUD_REGION kept
+# as a transitional alias so a stale shell doesn't break bring-up.)
+LOCATION        = os.environ.get("GOOGLE_CLOUD_LOCATION") \
+                   or os.environ.get("GOOGLE_CLOUD_REGION", "us-central1")
 AGENT_ENGINE_ID = os.environ.get("AGENT_ENGINE_ID", "")
 
 # In-memory session registry: session_key → {agent_session, turn_count}
@@ -97,8 +101,8 @@ class MissionsResponse(BaseModel):
 @app.on_event("startup")
 async def startup():
     if PROJECT_ID:
-        aiplatform.init(project=PROJECT_ID, location=REGION)
-    logger.info("Continental Concierge server started.")
+        aiplatform.init(project=PROJECT_ID, location=LOCATION)
+    logger.info("Continental Concierge server started (location=%s).", LOCATION)
 
 
 @app.on_event("shutdown")
@@ -262,8 +266,12 @@ async def list_characters(status: str = Query(default="active")):
     """
     List characters currently in the world.
     Filter by status: active | injured | hiding | excommunicado | dead
+
+    The JSONB containment check `NOT (traits @> '["player"]'::jsonb)` uses
+    the GIN index on `characters(traits)` and is the correct way to exclude
+    player-tagged rows — `traits::text[]` is not a valid cast.
     """
-    chars = sync_fetch_all(
+    chars = await fetch_all(
         """
         SELECT c.name, c.alias, c.title, c.status, c.reputation,
                f.name AS faction, l.name AS location
@@ -271,7 +279,7 @@ async def list_characters(status: str = Query(default="active")):
         LEFT JOIN factions f ON f.id = c.faction_id
         LEFT JOIN locations l ON l.id = c.current_location_id
         WHERE c.status = $1
-          AND NOT ('player' = ANY(c.traits::text[]))
+          AND NOT (c.traits @> '["player"]'::jsonb)
         ORDER BY c.reputation DESC
         """,
         status,
@@ -284,7 +292,7 @@ async def list_characters(status: str = Query(default="active")):
 @app.get("/debts")
 async def list_debts(status: str = Query(default="outstanding")):
     """List debts and markers, defaulting to outstanding."""
-    debts = sync_fetch_all(
+    debts = await fetch_all(
         """
         SELECT dm.id, dm.marker_type, dm.description, dm.value, dm.status,
                cr.name AS creditor, db.name AS debtor
@@ -304,7 +312,7 @@ async def list_debts(status: str = Query(default="outstanding")):
 @app.get("/violations")
 async def list_violations():
     """List pending rule violations."""
-    violations = sync_fetch_all(
+    violations = await fetch_all(
         """
         SELECT rv.id, rv.day, rv.phase, rv.severity, rv.adjudication,
                hr.title AS rule, c.name AS violator
@@ -319,7 +327,18 @@ async def list_violations():
 
 
 # ── Static UI ─────────────────────────────────────────────────────────────────
+# Serves the single-file demo UI at / (ui/index.html). Mounted LAST so every
+# explicit API route above takes precedence. With `html=True`, unmatched paths
+# fall through to index.html — fine because the UI is a single document.
+# The legacy ui/dist/ path is checked first so a future React build can drop in
+# without a code change.
 
-UI_DIR = os.path.join(os.path.dirname(__file__), "..", "ui", "dist")
-if os.path.exists(UI_DIR):
-    app.mount("/", StaticFiles(directory=UI_DIR, html=True), name="ui")
+_UI_CANDIDATES = [
+    os.path.join(os.path.dirname(__file__), "..", "ui", "dist"),
+    os.path.join(os.path.dirname(__file__), "..", "ui"),
+]
+for _ui_path in _UI_CANDIDATES:
+    if os.path.exists(os.path.join(_ui_path, "index.html")):
+        app.mount("/", StaticFiles(directory=_ui_path, html=True), name="ui")
+        logger.info("Mounted UI from %s", _ui_path)
+        break

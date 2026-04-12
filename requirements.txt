@@ -1,4 +1,19 @@
 # The Continental Concierge — Python Dependencies
+# ============================================================
+# SOURCE OF TRUTH: pyproject.toml
+# ------------------------------------------------------------
+# This file exists so that `pip install -r requirements.txt`
+# works in environments that don't yet resolve pyproject.toml
+# (older Cloud Build buildpacks, the Cloud Run default builder,
+# some CI runners). Keep it in sync manually when you edit
+# pyproject.toml — or regenerate it with:
+#
+#   uv pip compile pyproject.toml -o requirements.txt
+#
+# The MCP server has its own minimal pinset in
+# requirements-mcp.txt so the Cloud Run sidecar image stays
+# small. Do not merge the two.
+# ============================================================
 
 # Agent framework
 google-adk>=0.3.0
@@ -9,8 +24,11 @@ asyncpg>=0.30.0
 pgvector>=0.3.0
 
 # MCP
-mcp[cli]>=1.0.0
-fastmcp>=0.1.0
+# We use FastMCP via `from mcp.server.fastmcp import FastMCP`, i.e. the
+# bundled helper inside the official `mcp` SDK. The separate `fastmcp`
+# package on PyPI is a DIFFERENT project (jlowin/fastmcp, now at 3.x with
+# breaking changes) and is NOT used here — do not add it.
+mcp[cli]>=1.0.0,<2.0.0
 
 # Web framework (for Cloud Run UI/API)
 fastapi>=0.115.0

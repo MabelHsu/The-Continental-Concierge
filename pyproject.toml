@@ -8,7 +8,11 @@ dependencies = [
     "google-cloud-aiplatform[agent_engines]>=1.75.0",
     "asyncpg>=0.30.0",
     "pgvector>=0.3.0",
-    "mcp[cli]>=1.0.0",
+    # NOTE: FastMCP is imported as `mcp.server.fastmcp.FastMCP` — the helper
+    # bundled inside the official MCP SDK. The separate `fastmcp` package on
+    # PyPI (jlowin/fastmcp) is NOT used. Upper-pinned to avoid a silent major
+    # bump of the MCP SDK.
+    "mcp[cli]>=1.0.0,<2.0.0",
     "fastapi>=0.115.0",
     "uvicorn>=0.32.0",
     "pydantic>=2.0.0",
@@ -24,3 +28,22 @@ dev = [
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["evals"]
+
+[tool.ruff]
+# Ruff config is deliberately loose — CI only gates on real errors
+# (pyflakes F + pycodestyle E), not stylistic nits. Tighten once Phase 2
+# lands the real tool implementations and the codebase settles.
+line-length = 100
+target-version = "py312"
+extend-exclude = ["test_agents/concierge_v2"]  # scheduled for deletion
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]  # pyflakes + pycodestyle errors + import sorting
+ignore = [
+    "E501",  # line too long — handled by formatter, not a blocker
+    "E402",  # module-level import not at top — common in conditional imports
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

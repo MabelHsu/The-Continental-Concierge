@@ -1,12 +1,14 @@
 # The Continental Concierge
 
-A text-based RPG set in the world of The Continental — the assassin's hotel from the *John Wick* universe.
+An AI-powered **Narrative Engine** that turns any franchise into a persistent, interactive world — where fans become characters and every choice has consequences.
 
-You are an operative. You have checked into the hotel. The rules are binding. What happens next is up to you.
+> **Demo franchise:** The Continental, from the *John Wick* universe.
 
 Built on the Google Cloud stack: **ADK** (Agent Development Kit), **Vertex AI Agent Engine**, **AlloyDB**, **Cloud Run**, and **MCP Toolbox for Databases**.
 
 ---
+
+> **Below:** The following walkthrough shows the engine loaded with John Wick franchise content.
 
 ## The Game
 
@@ -86,6 +88,36 @@ The world around you is alive: NPCs have relationships, debts, and agendas. Fact
 | **Ledger** | Gemini 2.5 Flash | Debts, markers, reputation, relationships | No |
 | **Timeline** | Gemini 2.5 Flash | Events, locations, collision detection | No |
 | **Narrator** | Gemini 2.5 Pro | Cinematic prose — player is their character, Charon is NPC | **Yes** |
+
+### Franchise Bible Architecture
+
+The engine separates **narrative infrastructure** from **franchise content**. The orchestrator, ledger, timeline, consequence engine, MCP toolbox, and API layer are reusable across any IP. To deploy for a new franchise, update these files:
+
+| Layer | Files | What Changes |
+|-------|-------|-------------|
+| **Lore & World** | `db/seed_lore.sql` | Characters, factions, locations, history, rules |
+| **Voice & Tone** | `app/agents/*/prompt.md` | NPC personality, prose style, world-specific language |
+| **Player Config** | `app/shared/types.py` | Archetypes, stat names, starting inventories |
+| **Schema Labels** | `db/schema.sql` | Currency name, faction terminology |
+
+Everything else — the multi-agent orchestration, consequence propagation, player state machine, mission loop, memory system, and database layer — stays the same.
+
+#### Example: Swapping Franchises
+
+| Concept | John Wick (current demo) | Sci-Fi Guild (hypothetical) | Fantasy Tavern (hypothetical) |
+|---------|--------------------------|----------------------------|-------------------------------|
+| **Hub location** | The Continental Hotel | Orbital Station Nexus-7 | The Hearthstone Inn |
+| **Host NPC** | Charon (concierge) | ARIA (station AI) | Grimshaw (innkeeper) |
+| **Currency** | Gold coins | Credits | Silver marks |
+| **Player roles** | Assassin, Fixer, Cleaner... | Pilot, Engineer, Smuggler... | Ranger, Alchemist, Bard... |
+| **Faction system** | High Table, Ruska Roma... | Corporations, Syndicates... | Guilds, Crowns, Covens... |
+| **Rules** | No business on hotel grounds | Station neutrality pact | Hearthstone peace oath |
+
+The prompts, seed data, and type definitions change. The engine does not.
+
+See [`franchise/README.md`](franchise/README.md) for the full franchise-bible
+spec and [`franchise/john-wick/manifest.md`](franchise/john-wick/manifest.md)
+for a concrete list of the files that make up the demo franchise.
 
 ---
 
@@ -178,13 +210,22 @@ continental-concierge/
 │   ├── seed_lore.sql
 │   ├── retrieval_views.sql
 │   └── seed_embeddings.py
+├── franchise/                # Franchise bibles (the swappable layer)
+│   ├── README.md             # How to fork for a new IP
+│   └── john-wick/
+│       └── manifest.md       # Files that constitute the demo franchise
 ├── mcp/
-├── evals/
+├── evals/                    # Engine correctness tests
+│   └── README.md             # What each eval catches
 ├── infra/
 │   ├── agent_engine/
 │   ├── cloud_run/
 │   └── terraform/
-└── ui/
+├── ui/
+│   └── index.html           # Single-file demo client (served by FastAPI)
+└── .github/
+    └── workflows/
+        └── ci.yml           # Lint + import smoke check on push / PR
 ```
 
 ---
@@ -328,3 +369,28 @@ Every significant player action triggers writes across multiple tables. Killing 
 | Preferred faction / playstyle | What happened on day 4 |
 | Tone calibration data | Which rules are active |
 | Session continuity signals | Player's current gold balance |
+
+### Session Persistence and Scale-to-Zero
+
+**All gameplay state lives in AlloyDB, keyed by `session_id`.** The player
+record — stats, inventory, onboarding progress, active mission, faction
+standing — is written to `player_characters` and rehydrated at the top of
+every turn. `server.py` injects `[session_id:xxx]` at the front of every
+incoming message so the orchestrator can call `get_player(session_id)` as
+its first step. Nothing that needs to survive a turn lives in agent memory.
+
+**Where we are today (Phase 1):** the Agent Engine *session handle* itself
+is still held in an in-process `_sessions` dict inside `server.py`. That
+means a single Cloud Run instance can resume any client that hands it back
+its `session_id`, but a full scale-to-zero restart will force the next
+`/chat` to spin a fresh Agent Engine session. Gameplay state is still
+intact — what gets recreated is the ADK session object, not the narrative.
+
+**Where Phase 2 is going:** the `_sessions` dict gets replaced with an
+AlloyDB-backed lookup so the Agent Engine session id is stored alongside
+the player row. At that point every scale-to-zero transition is invisible
+to the client and the same `session_id` is fully portable across browser
+tabs, devices, or Cloud Run revisions. Tracked in `to-do-list.md` Phase 6.
+
+The only state held in agent memory is the single-turn working context —
+agent-to-agent hand-offs within one `/chat` call.

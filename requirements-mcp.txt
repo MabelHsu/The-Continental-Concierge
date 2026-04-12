@@ -1,4 +1,13 @@
 # MCP Server Dependencies
-mcp[cli]>=1.0.0
-fastmcp>=0.1.0
+# ============================================================
+# Minimal pinset for the Cloud Run MCP sidecar image.
+# Keep this file SMALL — it's the runtime surface for the
+# read/write MCP server only, not the full agent stack.
+# The canonical full dependency list is pyproject.toml.
+# ============================================================
+
+# FastMCP is imported from `mcp.server.fastmcp` — the helper bundled inside
+# the official MCP SDK. The standalone `fastmcp` package on PyPI is a
+# different project and is NOT used by this server.
+mcp[cli]>=1.0.0,<2.0.0
 asyncpg>=0.30.0
