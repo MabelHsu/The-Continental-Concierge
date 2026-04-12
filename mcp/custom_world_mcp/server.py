@@ -10,12 +10,10 @@ Deploy as a Cloud Run service.
 
 import json
 import os
-from contextlib import asynccontextmanager
 
 import asyncpg
-from mcp.server import Server
+
 from mcp.server.fastmcp import FastMCP
-from mcp.types import Tool, TextContent
 
 # ── Server Setup ──────────────────────────────────────────────
 
@@ -44,6 +42,7 @@ async def get_pool():
 
 
 # ── Write Tools ───────────────────────────────────────────────
+
 
 @mcp.tool()
 async def create_event(
@@ -87,7 +86,10 @@ async def create_event(
             # Check consecrated ground
             warnings = []
             if loc["is_consecrated"] and event_type in (
-                "conflict", "assassination", "negotiation", "transaction"
+                "conflict",
+                "assassination",
+                "negotiation",
+                "transaction",
             ):
                 warnings.append(f"Rule 1 violation: {event_type} at consecrated {loc['name']}")
 
@@ -99,16 +101,25 @@ async def create_event(
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                 RETURNING id
                 """,
-                story_day, story_time, title, description,
-                loc["id"], event_type, participant_ids, is_public, turn_number,
+                story_day,
+                story_time,
+                title,
+                description,
+                loc["id"],
+                event_type,
+                participant_ids,
+                is_public,
+                turn_number,
             )
 
-            return json.dumps({
-                "event_id": str(row["id"]),
-                "title": title,
-                "location": loc["name"],
-                "warnings": warnings,
-            })
+            return json.dumps(
+                {
+                    "event_id": str(row["id"]),
+                    "title": title,
+                    "location": loc["name"],
+                    "warnings": warnings,
+                }
+            )
 
 
 @mcp.tool()
@@ -138,16 +149,22 @@ async def create_debt(
             VALUES ($1, $2, $3, $4, $5)
             RETURNING id, status
             """,
-            cr["id"], db["id"], marker_type, description, value_weight,
+            cr["id"],
+            db["id"],
+            marker_type,
+            description,
+            value_weight,
         )
 
-        return json.dumps({
-            "debt_id": str(row["id"]),
-            "creditor": creditor_name,
-            "debtor": debtor_name,
-            "type": marker_type,
-            "weight": value_weight,
-        })
+        return json.dumps(
+            {
+                "debt_id": str(row["id"]),
+                "creditor": creditor_name,
+                "debtor": debtor_name,
+                "type": marker_type,
+                "weight": value_weight,
+            }
+        )
 
 
 @mcp.tool()
@@ -160,27 +177,30 @@ async def resolve_debt(debt_id: str, resolution: str, reason: str) -> str:
     pool = await get_pool()
     async with pool.acquire() as conn:
         async with conn.transaction():
-            debt = await conn.fetchrow(
-                "SELECT * FROM debts_markers WHERE id = $1::uuid", debt_id
-            )
+            debt = await conn.fetchrow("SELECT * FROM debts_markers WHERE id = $1::uuid", debt_id)
             if not debt:
                 return json.dumps({"error": "Debt not found"})
 
             if debt["marker_type"] == "blood_oath" and resolution != "fulfilled":
-                return json.dumps({
-                    "error": "Blood oaths can only be fulfilled. Anything else is a capital offense."
-                })
+                return json.dumps(
+                    {
+                        "error": "Blood oaths can only be fulfilled. Anything else is a capital offense."
+                    }
+                )
 
             await conn.execute(
                 "UPDATE debts_markers SET status = $1, resolved_at = now() WHERE id = $2::uuid",
-                resolution, debt_id,
+                resolution,
+                debt_id,
             )
 
-            return json.dumps({
-                "debt_id": debt_id,
-                "resolution": resolution,
-                "reason": reason,
-            })
+            return json.dumps(
+                {
+                    "debt_id": debt_id,
+                    "resolution": resolution,
+                    "reason": reason,
+                }
+            )
 
 
 @mcp.tool()
@@ -208,17 +228,20 @@ async def move_character(character_name: str, location_name: str) -> str:
 
         await conn.execute(
             "UPDATE characters SET current_location_id = $1, updated_at = now() WHERE id = $2",
-            loc["id"], char["id"],
+            loc["id"],
+            char["id"],
         )
 
         cross_city = char["old_city"] and loc["city"] and char["old_city"] != loc["city"]
 
-        return json.dumps({
-            "character": character_name,
-            "from": char["old_location"],
-            "to": loc["name"],
-            "cross_city_travel": cross_city,
-        })
+        return json.dumps(
+            {
+                "character": character_name,
+                "from": char["old_location"],
+                "to": loc["name"],
+                "cross_city_travel": cross_city,
+            }
+        )
 
 
 @mcp.tool()
@@ -236,16 +259,19 @@ async def update_reputation(character_name: str, change: int, reason: str) -> st
         new_rep = max(0, min(100, char["reputation"] + change))
         await conn.execute(
             "UPDATE characters SET reputation = $1, updated_at = now() WHERE id = $2",
-            new_rep, char["id"],
+            new_rep,
+            char["id"],
         )
 
-        return json.dumps({
-            "character": character_name,
-            "old_reputation": char["reputation"],
-            "change": change,
-            "new_reputation": new_rep,
-            "reason": reason,
-        })
+        return json.dumps(
+            {
+                "character": character_name,
+                "old_reputation": char["reputation"],
+                "change": change,
+                "new_reputation": new_rep,
+                "reason": reason,
+            }
+        )
 
 
 @mcp.tool()
@@ -274,15 +300,19 @@ async def record_rule_violation(
             VALUES ($1, $2, $3, 'pending')
             RETURNING id
             """,
-            rule["id"], violator["id"], description,
+            rule["id"],
+            violator["id"],
+            description,
         )
 
-        return json.dumps({
-            "violation_id": str(row["id"]),
-            "rule": rule["title"],
-            "severity": rule["severity"],
-            "violator": violator_name,
-        })
+        return json.dumps(
+            {
+                "violation_id": str(row["id"]),
+                "rule": rule["title"],
+                "severity": rule["severity"],
+                "violator": violator_name,
+            }
+        )
 
 
 @mcp.tool()
@@ -312,7 +342,10 @@ async def save_story_snapshot(
             VALUES ($1, $2, $3, $4::jsonb)
             RETURNING id
             """,
-            turn_number, story_day, summary, json.dumps(world_state, default=str),
+            turn_number,
+            story_day,
+            summary,
+            json.dumps(world_state, default=str),
         )
 
         return json.dumps({"snapshot_id": str(row["id"]), "turn": turn_number})

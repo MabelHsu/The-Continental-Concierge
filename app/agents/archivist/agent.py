@@ -10,17 +10,14 @@ from google.adk.tools import FunctionTool
 
 from app.shared.config import config
 from app.tools.lore_tools import (
+    get_character_history,
     lookup_character,
     lookup_rule,
     search_lore,
-    get_character_history,
 )
 from app.tools.world_state_tools import get_events, get_world_state
 
-
-ARCHIVIST_INSTRUCTION = open(
-    "app/agents/archivist/prompt.md", "r"
-).read()
+ARCHIVIST_INSTRUCTION = open("app/agents/archivist/prompt.md", "r").read()
 
 archivist_agent = Agent(
     name="archivist",

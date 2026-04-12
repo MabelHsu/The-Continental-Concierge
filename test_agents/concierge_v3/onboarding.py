@@ -16,8 +16,7 @@ and complete_onboarding() on the final step.
 from google.adk.agents import Agent
 from google.adk.tools import FunctionTool
 
-from .player_state import get_player, update_player, complete_onboarding
-
+from .player_state import complete_onboarding, get_player, update_player
 
 onboarding_agent = Agent(
     name="onboarding",
@@ -149,6 +148,6 @@ One short paragraph or a single sentence. Never longer.
     ],
     generate_content_config={
         "temperature": 0.75,
-        "max_output_tokens": 512,   # Charon is concise
+        "max_output_tokens": 512,  # Charon is concise
     },
 )

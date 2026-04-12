@@ -4,7 +4,7 @@ All environment-driven settings live here.
 """
 
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
@@ -17,13 +17,14 @@ class Config:
     # stale shells don't break bring-up — remove once all deployments are
     # on the new name.
     project_id: str = os.getenv("GOOGLE_CLOUD_PROJECT", "continental-concierge")
-    location: str = (
-        os.getenv("GOOGLE_CLOUD_LOCATION")
-        or os.getenv("GOOGLE_CLOUD_REGION", "us-central1")
+    location: str = os.getenv("GOOGLE_CLOUD_LOCATION") or os.getenv(
+        "GOOGLE_CLOUD_REGION", "us-central1"
     )
 
     # Gemini
-    model_name: str = os.getenv("GEMINI_MODEL", "gemini-2.5-pro-preview-05-06")  # Vertex AI versioned string
+    model_name: str = os.getenv(
+        "GEMINI_MODEL", "gemini-2.5-pro-preview-05-06"
+    )  # Vertex AI versioned string
     embedding_model: str = os.getenv("EMBEDDING_MODEL", "text-embedding-004")
 
     # AlloyDB (via MCP Toolbox for Databases)

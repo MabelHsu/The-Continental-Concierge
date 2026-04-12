@@ -17,20 +17,17 @@ from google.adk.agents import Agent
 from google.adk.tools import FunctionTool
 
 from app.shared.config import config
+from app.tools.lore_tools import lookup_character, search_lore
 from app.tools.player_tools import (
-    create_player_character,
     advance_onboarding_step,
     complete_onboarding,
+    create_player_character,
     get_player,
     update_player_location,
 )
-from app.tools.lore_tools import lookup_character, search_lore
 from app.tools.world_state_tools import get_world_state
 
-
-ONBOARDING_INSTRUCTION = open(
-    "app/agents/onboarding/prompt.md", "r"
-).read()
+ONBOARDING_INSTRUCTION = open("app/agents/onboarding/prompt.md", "r").read()
 
 onboarding_agent = Agent(
     name="onboarding",

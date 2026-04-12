@@ -9,8 +9,8 @@ Run with:  adk web test_agents/
 from google.adk.agents import Agent
 from google.adk.tools import FunctionTool
 
-
 # ── Mock tool implementations ────────────────────────────────────────────────
+
 
 def lookup_character(name: str) -> dict:
     """Look up a character by name. Returns their profile from The Continental."""
@@ -57,9 +57,24 @@ def lookup_character(name: str) -> dict:
 def check_marker(debtor: str, holder: str) -> dict:
     """Check if a blood oath marker exists between two characters."""
     markers = [
-        {"debtor": "john", "holder": "santino", "status": "called", "description": "Marker called to assassinate Gianna D'Antonio."},
-        {"debtor": "john", "holder": "winston", "status": "outstanding", "description": "Marker for services rendered during the NY events."},
-        {"debtor": "sofia", "holder": "john", "status": "outstanding", "description": "Marker from John helping Sofia reach Elder."},
+        {
+            "debtor": "john",
+            "holder": "santino",
+            "status": "called",
+            "description": "Marker called to assassinate Gianna D'Antonio.",
+        },
+        {
+            "debtor": "john",
+            "holder": "winston",
+            "status": "outstanding",
+            "description": "Marker for services rendered during the NY events.",
+        },
+        {
+            "debtor": "sofia",
+            "holder": "john",
+            "status": "outstanding",
+            "description": "Marker from John helping Sofia reach Elder.",
+        },
     ]
     d, h = debtor.lower(), holder.lower()
     for m in markers:
@@ -82,7 +97,12 @@ def get_world_state() -> dict:
             "John Wick's excommunication in effect since dawn",
         ],
         "open_contracts": [
-            {"target": "John Wick", "value": "14 million", "status": "open", "posted_by": "High Table"},
+            {
+                "target": "John Wick",
+                "value": "14 million",
+                "status": "open",
+                "posted_by": "High Table",
+            },
         ],
         "continental_status": "open",
         "alert_level": "critical",

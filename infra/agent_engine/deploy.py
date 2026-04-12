@@ -19,7 +19,7 @@ from app.agents.concierge.agent import root_agent
 
 def deploy(project_id: str, region: str, staging_bucket: str):
     """Deploy the root agent to Vertex AI Agent Engine."""
-    
+
     # Initialize Vertex AI
     aiplatform.init(
         project=project_id,
@@ -46,7 +46,7 @@ def deploy(project_id: str, region: str, staging_bucket: str):
     }
 
     print("Creating Agent Engine app...")
-    
+
     # Create the Agent Engine app with the root agent
     agent_engine = agent_engines.AgentEngine.create(
         agent_engine=root_agent,
@@ -58,30 +58,30 @@ def deploy(project_id: str, region: str, staging_bucket: str):
             "Archivist, Ledger, Timeline, and Narrator agents."
         ),
         extra_packages=[
-            "./app",    # Agent code
-            "./mcp",    # MCP server configs
+            "./app",  # Agent code
+            "./mcp",  # MCP server configs
         ],
         env_vars=env_vars,
     )
 
     print(f"Agent Engine deployed: {agent_engine.resource_name}")
     print(f"Agent Engine ID: {agent_engine.name}")
-    
+
     return agent_engine
 
 
 def test_agent(agent_engine, test_query: str = "Who is Winston Scott?"):
     """Test the deployed agent with a sample query."""
     print(f"\nTesting with: '{test_query}'")
-    
+
     # Create a session
     session = agent_engine.create_session(
         user_id="test-user-001",
     )
-    
+
     # Send a query
     response = session.send_message(test_query)
-    
+
     print(f"Response: {response}")
     return response
 
@@ -92,14 +92,14 @@ if __name__ == "__main__":
     parser.add_argument("--region", default="us-central1", help="Google Cloud region")
     parser.add_argument("--bucket", required=True, help="GCS staging bucket (gs://...)")
     parser.add_argument("--test", action="store_true", help="Run a test query after deployment")
-    
+
     args = parser.parse_args()
-    
+
     agent_engine = deploy(
         project_id=args.project,
         region=args.region,
         staging_bucket=args.bucket,
     )
-    
+
     if args.test:
         test_agent(agent_engine)

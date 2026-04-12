@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 # ── Player State ───────────────────────────────────────────────────────────────
 
+
 async def get_player(session_id: str) -> Optional[dict]:
     """
     Get the full player state for a session. Returns None if not yet created.
@@ -109,9 +110,7 @@ async def advance_onboarding_step(
         Updated player_characters row.
     """
     # 1. Log the exchange
-    player = await fetch_one(
-        "SELECT id FROM player_characters WHERE session_id = $1", session_id
-    )
+    player = await fetch_one("SELECT id FROM player_characters WHERE session_id = $1", session_id)
     if not player:
         raise ValueError(f"No player character for session {session_id}")
 
@@ -150,9 +149,7 @@ async def advance_onboarding_step(
             )
 
     # 3. Build SET clause dynamically (safe — keys are allowlisted above)
-    set_clauses = ", ".join(
-        f"{k} = ${i+2}" for i, k in enumerate(updates.keys())
-    )
+    set_clauses = ", ".join(f"{k} = ${i + 2}" for i, k in enumerate(updates.keys()))
     values = list(updates.values())
     await execute(
         f"UPDATE player_characters SET {set_clauses} WHERE session_id = $1",
@@ -177,9 +174,7 @@ async def complete_onboarding(session_id: str) -> dict:
     Returns:
         The finalised player_status_view row.
     """
-    player = await fetch_one(
-        "SELECT * FROM player_characters WHERE session_id = $1", session_id
-    )
+    player = await fetch_one("SELECT * FROM player_characters WHERE session_id = $1", session_id)
     if not player:
         raise ValueError(f"No player for session {session_id}")
 
@@ -203,7 +198,7 @@ async def complete_onboarding(session_id: str) -> dict:
             player["title"],
             player["faction_id"],
             player["reputation"],
-            json.dumps(["player"]),   # tag as player character in traits
+            json.dumps(["player"]),  # tag as player character in traits
             player["backstory"],
             player["current_location_id"],
         )
@@ -262,27 +257,44 @@ async def complete_onboarding(session_id: str) -> dict:
 def _starting_inventory(archetype: str) -> list[tuple]:
     """Return (item_type, name, description, quantity) tuples for archetype."""
     items = {
-        "assassin":          [("weapon", "Suppressed Pistol", "Standard issue. Clean.", 1),
-                              ("document", "Clean Passport", "One of three.", 1)],
-        "cleaner":           [("artifact", "Burner Phone", "Pre-loaded, untraceable.", 1),
-                              ("token", "Continental Coin", "Seven gold coins.", 7)],
-        "fixer":             [("intel", "Contact List", "Encrypted. Three tier-one names.", 1),
-                              ("document", "Blank Marker", "Unsigned. Waiting for blood.", 1)],
-        "information_broker":[("intel", "Dossier Fragment", "Partial file. Someone important.", 1),
-                              ("artifact", "Encrypted Drive", "8TB. The price is steep.", 1)],
-        "weapons_dealer":    [("weapon", "Custom Pistol", "Engraved. Personal use only.", 1),
-                              ("artifact", "Weapons Cache Key", "Location known only to you.", 1)],
-        "driver":            [("vehicle", "Safecar", "Reinforced. Clean plates.", 1),
-                              ("document", "Multiple IDs", "Six identities, three cities.", 1)],
-        "medic":             [("artifact", "Field Kit", "Military grade. No questions asked.", 1),
-                              ("token", "Favour Chip", "One debt outstanding. Mutual.", 1)],
-        "enforcer":          [("weapon", "Reinforced Knuckles", "Subtle.", 1),
-                              ("document", "Employer Letter", "Authorised use of force.", 1)],
+        "assassin": [
+            ("weapon", "Suppressed Pistol", "Standard issue. Clean.", 1),
+            ("document", "Clean Passport", "One of three.", 1),
+        ],
+        "cleaner": [
+            ("artifact", "Burner Phone", "Pre-loaded, untraceable.", 1),
+            ("token", "Continental Coin", "Seven gold coins.", 7),
+        ],
+        "fixer": [
+            ("intel", "Contact List", "Encrypted. Three tier-one names.", 1),
+            ("document", "Blank Marker", "Unsigned. Waiting for blood.", 1),
+        ],
+        "information_broker": [
+            ("intel", "Dossier Fragment", "Partial file. Someone important.", 1),
+            ("artifact", "Encrypted Drive", "8TB. The price is steep.", 1),
+        ],
+        "weapons_dealer": [
+            ("weapon", "Custom Pistol", "Engraved. Personal use only.", 1),
+            ("artifact", "Weapons Cache Key", "Location known only to you.", 1),
+        ],
+        "driver": [
+            ("vehicle", "Safecar", "Reinforced. Clean plates.", 1),
+            ("document", "Multiple IDs", "Six identities, three cities.", 1),
+        ],
+        "medic": [
+            ("artifact", "Field Kit", "Military grade. No questions asked.", 1),
+            ("token", "Favour Chip", "One debt outstanding. Mutual.", 1),
+        ],
+        "enforcer": [
+            ("weapon", "Reinforced Knuckles", "Subtle.", 1),
+            ("document", "Employer Letter", "Authorised use of force.", 1),
+        ],
     }
     return items.get(archetype, [])
 
 
 # ── Player Stat Mutations ──────────────────────────────────────────────────────
+
 
 async def update_player_reputation(
     session_id: str,
@@ -442,6 +454,7 @@ async def earn_gold(session_id: str, amount: int, reason: str) -> dict:
 
 # ── Missions ───────────────────────────────────────────────────────────────────
 
+
 async def get_available_missions(
     session_id: str,
     limit: int = 3,
@@ -568,9 +581,7 @@ async def complete_mission(
     if not player or not player["active_mission_id"]:
         return {"error": "No active mission to complete."}
 
-    mission = await fetch_one(
-        "SELECT * FROM missions WHERE id = $1", player["active_mission_id"]
-    )
+    mission = await fetch_one("SELECT * FROM missions WHERE id = $1", player["active_mission_id"])
     if not mission:
         return {"error": "Mission record not found."}
 
@@ -630,9 +641,7 @@ async def complete_mission(
             mission["id"],
         )
 
-    updated = await fetch_one(
-        "SELECT * FROM player_status_view WHERE session_id = $1", session_id
-    )
+    updated = await fetch_one("SELECT * FROM player_status_view WHERE session_id = $1", session_id)
     return {
         "outcome": outcome,
         "rewards": rewards,
@@ -643,6 +652,7 @@ async def complete_mission(
 
 
 # ── Inventory ──────────────────────────────────────────────────────────────────
+
 
 async def add_inventory_item(
     session_id: str,
@@ -711,6 +721,7 @@ async def get_inventory(session_id: str) -> list[dict]:
 
 # ── Faction Standing ───────────────────────────────────────────────────────────
 
+
 async def update_faction_standing(
     session_id: str,
     faction_name: str,
@@ -741,11 +752,14 @@ async def update_faction_standing(
     if not faction:
         return {"error": f"Faction '{faction_name}' not found."}
 
-    old = await fetch_val(
-        "SELECT standing FROM player_faction_standing WHERE player_id = $1 AND faction_id = $2",
-        player_id,
-        faction["id"],
-    ) or 50
+    old = (
+        await fetch_val(
+            "SELECT standing FROM player_faction_standing WHERE player_id = $1 AND faction_id = $2",
+            player_id,
+            faction["id"],
+        )
+        or 50
+    )
 
     new_standing = max(0, min(100, old + delta))
     story_day = await fetch_val("SELECT current_day FROM story_state WHERE id = 1") or 1

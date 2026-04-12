@@ -38,9 +38,9 @@ def _dsn() -> str:
     """Build postgres DSN from environment variables."""
     host = os.environ.get("ALLOYDB_HOST", "127.0.0.1")
     port = os.environ.get("ALLOYDB_PORT", "5432")
-    db   = os.environ.get("ALLOYDB_DATABASE", "continental")
+    db = os.environ.get("ALLOYDB_DATABASE", "continental")
     user = os.environ.get("ALLOYDB_USER", "continental_app")
-    pw   = os.environ.get("ALLOYDB_PASSWORD", "")
+    pw = os.environ.get("ALLOYDB_PASSWORD", "")
     return f"postgresql://{user}:{pw}@{host}:{port}/{db}"
 
 
@@ -72,6 +72,7 @@ async def close_pool() -> None:
 
 
 # ── Async query helpers ────────────────────────────────────────────────────────
+
 
 @asynccontextmanager
 async def transaction():

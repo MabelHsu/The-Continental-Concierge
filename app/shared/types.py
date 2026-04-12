@@ -5,6 +5,7 @@ The Narrative Director is the only agent that produces user-facing text.
 """
 
 from __future__ import annotations
+
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Optional
@@ -20,14 +21,14 @@ class TaskType(str, Enum):
     EVENT_LOG = "event_log"
     MISSION_CREATE = "mission_create"
     MISSION_UPDATE = "mission_update"
-    MISSION_OFFER = "mission_offer"        # Charon offers available work to the player
+    MISSION_OFFER = "mission_offer"  # Charon offers available work to the player
     MISSION_COMPLETE = "mission_complete"  # Player resolves their active mission
     RULE_CHECK = "rule_check"
     NARRATE = "narrate"
     CONSISTENCY_CHECK = "consistency_check"
     # ── Player system ──────────────────────────────────────────────────────
-    ONBOARDING = "onboarding"              # Identity creation / revelation flow
-    PLAYER_QUERY = "player_query"          # Read current player state
+    ONBOARDING = "onboarding"  # Identity creation / revelation flow
+    PLAYER_QUERY = "player_query"  # Read current player state
     PLAYER_STAT_CHANGE = "player_stat_change"  # Reputation / gold / location mutations
     INVENTORY_UPDATE = "inventory_update"  # Add / remove inventory items
 
@@ -35,6 +36,7 @@ class TaskType(str, Enum):
 @dataclass
 class Task:
     """A unit of work assigned by the orchestrator to a specialist."""
+
     task_type: TaskType
     description: str
     parameters: dict = field(default_factory=dict)
@@ -45,6 +47,7 @@ class Task:
 @dataclass
 class AgentResult:
     """Structured output from a specialist agent."""
+
     agent: str
     task_type: TaskType
     success: bool
@@ -57,6 +60,7 @@ class AgentResult:
 @dataclass
 class WorldSnapshot:
     """Current state of the world, passed to the narrative director."""
+
     day: int
     phase: str
     crisis_level: int
@@ -72,6 +76,7 @@ class WorldSnapshot:
 @dataclass
 class ConsistencyReport:
     """Output of the consistency checker before final response."""
+
     is_consistent: bool
     issues: list[str] = field(default_factory=list)
     suggested_fixes: list[str] = field(default_factory=list)
@@ -82,6 +87,7 @@ class ConsistencyReport:
 @dataclass
 class NarrativeOutput:
     """Final output from the narrative director."""
+
     scene_text: str
     speaker_lines: list[dict] = field(default_factory=list)  # [{character, line}]
     mood: str = "neutral"
@@ -92,12 +98,14 @@ class NarrativeOutput:
 
 # ── Player types ───────────────────────────────────────────────────────────────
 
+
 @dataclass
 class PlayerCharacter:
     """
     The player's character as it exists in the world.
     Read from player_status_view after onboarding completes.
     """
+
     session_id: str
     user_id: str
     name: Optional[str]
@@ -136,10 +144,7 @@ class PlayerCharacter:
     @classmethod
     def from_db(cls, row: dict) -> "PlayerCharacter":
         """Build from a player_status_view row."""
-        return cls(**{
-            k: v for k, v in row.items()
-            if k in cls.__dataclass_fields__
-        })
+        return cls(**{k: v for k, v in row.items() if k in cls.__dataclass_fields__})
 
     def display_name(self) -> str:
         """Best available name: real name > alias > 'Unknown Operative'."""
@@ -167,9 +172,10 @@ class OnboardingState:
     Tracks where the player is in the character creation / revelation flow.
     Passed to the Onboarding Agent at the start of each onboarding turn.
     """
+
     session_id: str
-    creation_path: str          # 'pending' | 'mystery' | 'custom'
-    current_step: int           # 0 = not started
+    creation_path: str  # 'pending' | 'mystery' | 'custom'
+    current_step: int  # 0 = not started
     is_complete: bool = False
 
     # Mystery path
@@ -177,7 +183,7 @@ class OnboardingState:
     identity_revealed: bool = False
 
     # Collected data so far
-    collected: dict = field(default_factory=dict)   # {name, alias, archetype, ...}
+    collected: dict = field(default_factory=dict)  # {name, alias, archetype, ...}
 
     # Step definitions per path
     MYSTERY_STEPS: int = 5
@@ -200,6 +206,7 @@ class MissionOffer:
     A mission Charon is presenting to the player.
     Narrator uses this to write Charon's pitch scene.
     """
+
     mission_id: int
     title: str
     mission_type: str

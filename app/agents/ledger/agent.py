@@ -10,20 +10,17 @@ from google.adk.tools import FunctionTool
 
 from app.shared.config import config
 from app.tools.ledger_tools import (
-    get_debts,
     create_debt,
-    update_debt_status,
+    get_debts,
+    get_faction_standing,
     get_relationships,
-    update_relationship,
     get_reputation,
     modify_reputation,
-    get_faction_standing,
+    update_debt_status,
+    update_relationship,
 )
 
-
-LEDGER_INSTRUCTION = open(
-    "app/agents/ledger/prompt.md", "r"
-).read()
+LEDGER_INSTRUCTION = open("app/agents/ledger/prompt.md", "r").read()
 
 ledger_agent = Agent(
     name="ledger",

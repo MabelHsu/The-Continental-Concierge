@@ -10,7 +10,6 @@ No database: hardcoded mock data to test routing and response structure.
 from google.adk.agents import Agent
 from google.adk.tools import FunctionTool
 
-
 # ── Mock data ─────────────────────────────────────────────────────────────────
 
 _MARKERS = [
@@ -51,7 +50,12 @@ _MARKERS = [
 
 _REPUTATION = {
     "winston": {"score": 90, "faction": "Continental Management", "trend": "stable"},
-    "john": {"score": 99, "faction": "excommunicado", "trend": "falling", "note": "Excommunication active — most scores suspended."},
+    "john": {
+        "score": 99,
+        "faction": "excommunicado",
+        "trend": "falling",
+        "note": "Excommunication active — most scores suspended.",
+    },
     "sofia": {"score": 78, "faction": "Continental Management", "trend": "stable"},
     "charon": {"score": 85, "faction": "Continental Management", "trend": "stable"},
     "berrada": {"score": 70, "faction": "High Table (ancillary)", "trend": "stable"},
@@ -59,11 +63,41 @@ _REPUTATION = {
 }
 
 _RELATIONSHIPS = [
-    {"a": "winston", "b": "john", "type": "alliance", "strength": 75, "notes": "Old friendship, complicated by John's excommunication."},
-    {"a": "winston", "b": "charon", "type": "loyalty", "strength": 95, "notes": "Deep professional loyalty — verging on paternal."},
-    {"a": "sofia", "b": "john", "type": "alliance", "strength": 70, "notes": "Mutual respect. She owes him a marker. Neither has called it."},
-    {"a": "john", "b": "santino", "type": "enmity", "strength": 90, "notes": "Santino called John's marker and then tried to have him killed. John killed Santino. Relationship terminated permanently."},
-    {"a": "sofia", "b": "berrada", "type": "tense_business", "strength": 30, "notes": "Berrada holds information Sofia needs. She does not trust him."},
+    {
+        "a": "winston",
+        "b": "john",
+        "type": "alliance",
+        "strength": 75,
+        "notes": "Old friendship, complicated by John's excommunication.",
+    },
+    {
+        "a": "winston",
+        "b": "charon",
+        "type": "loyalty",
+        "strength": 95,
+        "notes": "Deep professional loyalty — verging on paternal.",
+    },
+    {
+        "a": "sofia",
+        "b": "john",
+        "type": "alliance",
+        "strength": 70,
+        "notes": "Mutual respect. She owes him a marker. Neither has called it.",
+    },
+    {
+        "a": "john",
+        "b": "santino",
+        "type": "enmity",
+        "strength": 90,
+        "notes": "Santino called John's marker and then tried to have him killed. John killed Santino. Relationship terminated permanently.",
+    },
+    {
+        "a": "sofia",
+        "b": "berrada",
+        "type": "tense_business",
+        "strength": 30,
+        "notes": "Berrada holds information Sofia needs. She does not trust him.",
+    },
 ]
 
 
@@ -89,6 +123,7 @@ _NAME_ALIASES = {
     "adjudicator": "adjudicator",
 }
 
+
 def _normalize(name: str) -> str:
     """Map a free-text character name to its canonical data key."""
     key = name.lower().strip()
@@ -103,6 +138,7 @@ def _normalize(name: str) -> str:
 
 
 # ── Mock tool functions ───────────────────────────────────────────────────────
+
 
 def get_markers(character: str, role: str = "any") -> dict:
     """
@@ -134,7 +170,8 @@ def get_markers(character: str, role: str = "any") -> dict:
         "markers": results,
         "warnings": (
             [f"{character} has {len(outstanding)} outstanding marker(s) — potential obligation."]
-            if outstanding else []
+            if outstanding
+            else []
         ),
     }
 
@@ -160,10 +197,7 @@ def get_all_outstanding_markers() -> dict:
         "total_outstanding": len(outstanding),
         "by_debtor": by_debtor,
         "markers": outstanding,
-        "summary": [
-            f"{m['debtor']} owes {m['holder']}: {m['obligation']}"
-            for m in outstanding
-        ],
+        "summary": [f"{m['debtor']} owes {m['holder']}: {m['obligation']}" for m in outstanding],
     }
 
 
@@ -208,8 +242,19 @@ def get_reputation(character: str) -> dict:
             warnings.append("Reputation critically low — excommunicado risk.")
         if rep["faction"] == "excommunicado":
             warnings.append("Character is excommunicado — services suspended.")
-        return {"found": True, "character": character, "canonical_key": key, "reputation": rep, "warnings": warnings}
-    return {"found": False, "character": character, "canonical_key": key, "message": "No reputation record on file."}
+        return {
+            "found": True,
+            "character": character,
+            "canonical_key": key,
+            "reputation": rep,
+            "warnings": warnings,
+        }
+    return {
+        "found": False,
+        "character": character,
+        "canonical_key": key,
+        "message": "No reputation record on file.",
+    }
 
 
 def get_relationships(character: str) -> dict:

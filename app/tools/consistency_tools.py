@@ -6,8 +6,6 @@ This is the "Canon Judge" from the design spec, implemented as tools
 rather than a separate agent to keep the agent count at 5.
 """
 
-from typing import Optional
-
 
 async def check_consistency(
     proposed_events: list[dict],
@@ -15,7 +13,7 @@ async def check_consistency(
 ) -> dict:
     """
     Check proposed narrative output for contradictions before delivery.
-    
+
     This is the Canon Judge function. It verifies:
     - Characters are in locations consistent with the timeline
     - Proposed events don't contradict established facts
@@ -23,11 +21,11 @@ async def check_consistency(
     - Hotel rules aren't being violated without acknowledgment
     - Dead characters aren't suddenly active
     - Timeline ordering is correct
-    
+
     Args:
         proposed_events: Events the narrator wants to describe
         proposed_state_changes: State mutations the response implies
-    
+
     Returns:
         ConsistencyReport as dict: {
             is_consistent: bool,
@@ -54,7 +52,7 @@ async def validate_character_action(
 ) -> dict:
     """
     Quick check: can this character do this action right now?
-    
+
     Checks status, location, obligations, and rules.
     """
     pass
@@ -63,7 +61,7 @@ async def validate_character_action(
 async def get_canon_facts(topic: str) -> list[str]:
     """
     Retrieve established facts about a topic for contradiction checking.
-    
+
     Used by the consistency checker to compare proposed events against canon.
     """
     pass

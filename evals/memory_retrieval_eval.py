@@ -25,8 +25,9 @@ import pytest
 # importable; the pytestmark below skips the whole file cleanly instead
 # of crashing the test runner. Delete both once Phase 3 is merged.
 try:
-    from app.tools.lore_tools import search_lore, get_character_dossier  # noqa: F401
     from app.tools.db import fetch_all, generate_embedding  # noqa: F401
+    from app.tools.lore_tools import get_character_dossier, search_lore  # noqa: F401
+
     _PHASE3_READY = True
     _PHASE3_SKIP_REASON = ""
 except ImportError as _import_err:
@@ -82,7 +83,6 @@ RETRIEVAL_TEST_CASES = [
         expected_contains=["red circle", "nightclub"],
         description="Should find the Red Circle lore chunk.",
     ),
-
     # Semantic / conceptual
     RetrievalTestCase(
         name="semantic_debt_concept",
@@ -102,7 +102,6 @@ RETRIEVAL_TEST_CASES = [
         expected_contains=["gold coin", "currency"],
         description="Should find gold coin economy lore.",
     ),
-
     # Mixed queries (structured + semantic)
     RetrievalTestCase(
         name="mixed_casablanca",
@@ -116,7 +115,6 @@ RETRIEVAL_TEST_CASES = [
         expected_contains=["high table", "governing"],
         description="Should find High Table faction lore.",
     ),
-
     # Cross-reference (entity connections)
     RetrievalTestCase(
         name="cross_ref_sofia_debts",
@@ -128,6 +126,7 @@ RETRIEVAL_TEST_CASES = [
 
 
 # ── Evaluation Runner ─────────────────────────────────────────
+
 
 async def evaluate_retrieval() -> list[RetrievalResult]:
     """Run retrieval quality evaluation."""
@@ -154,44 +153,41 @@ async def evaluate_retrieval() -> list[RetrievalResult]:
                 ).lower()
 
             # Check which expected keywords appear
-            matched = [
-                kw for kw in tc.expected_contains
-                if kw.lower() in result_text
-            ]
-            missing = [
-                kw for kw in tc.expected_contains
-                if kw.lower() not in result_text
-            ]
+            matched = [kw for kw in tc.expected_contains if kw.lower() in result_text]
+            missing = [kw for kw in tc.expected_contains if kw.lower() not in result_text]
 
             result_count = (
                 search_result.get("result_count", 0)
                 if isinstance(search_result, dict) and "result_count" in search_result
-                else 1 if search_result else 0
+                else 1
+                if search_result
+                else 0
             )
 
-            passed = (
-                len(missing) == 0
-                and result_count >= tc.min_results
-            )
+            passed = len(missing) == 0 and result_count >= tc.min_results
 
-            results.append(RetrievalResult(
-                name=tc.name,
-                passed=passed,
-                result_count=result_count,
-                matched_keywords=matched,
-                missing_keywords=missing,
-                details=f"Found {result_count} results. Matched: {matched}, Missing: {missing}",
-            ))
+            results.append(
+                RetrievalResult(
+                    name=tc.name,
+                    passed=passed,
+                    result_count=result_count,
+                    matched_keywords=matched,
+                    missing_keywords=missing,
+                    details=f"Found {result_count} results. Matched: {matched}, Missing: {missing}",
+                )
+            )
 
         except Exception as e:
-            results.append(RetrievalResult(
-                name=tc.name,
-                passed=False,
-                result_count=0,
-                matched_keywords=[],
-                missing_keywords=tc.expected_contains,
-                details=f"Error: {e}",
-            ))
+            results.append(
+                RetrievalResult(
+                    name=tc.name,
+                    passed=False,
+                    result_count=0,
+                    matched_keywords=[],
+                    missing_keywords=tc.expected_contains,
+                    details=f"Error: {e}",
+                )
+            )
 
     return results
 

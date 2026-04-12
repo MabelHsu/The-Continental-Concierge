@@ -63,10 +63,13 @@ jobs:
           pip install -r requirements.txt
 
       - name: Import all first-party modules
-        # This catches the classic "typo'd import" failure mode (e.g. the
-        # generate_embedding import bug in evals/memory_retrieval_eval.py).
-        # It does NOT exercise anything that needs a database or Vertex AI
-        # client — those are guarded by env vars and short-circuit to noop.
+        # Walks app/ only. The mcp/ sidecar is intentionally excluded because:
+        # (a) it deploys as a separate Cloud Run service with requirements-mcp.txt,
+        # (b) the local mcp/ directory shadows the installed `mcp` SDK package
+        #     at the repo root, causing `from mcp import ClientSession` inside
+        #     google-adk to resolve to the wrong module and fail with ImportError.
+        # The sidecar smoke-test belongs in a dedicated job that installs
+        # requirements-mcp.txt and changes directory into mcp/ before walking.
         env:
           GOOGLE_CLOUD_PROJECT: ""
           AGENT_ENGINE_ID: ""
@@ -82,27 +85,17 @@ jobs:
           import sys
 
           failed = []
-          for pkg_name in ("app", "mcp"):
+          pkg = importlib.import_module("app")
+          for mod in pkgutil.walk_packages(pkg.__path__, prefix="app."):
               try:
-                  pkg = importlib.import_module(pkg_name)
-              except ModuleNotFoundError:
-                  # Not every branch ships the mcp/ package; skip if absent.
-                  continue
-              except Exception as e:
-                  failed.append((pkg_name, repr(e)))
-                  continue
-              if not hasattr(pkg, "__path__"):
-                  continue
-              for mod in pkgutil.walk_packages(pkg.__path__, prefix=f"{pkg_name}."):
-                  try:
-                      importlib.import_module(mod.name)
-                  except Exception as e:  # noqa: BLE001 — we want the failure reason
-                      failed.append((mod.name, repr(e)))
+                  importlib.import_module(mod.name)
+              except Exception as e:  # noqa: BLE001
+                  failed.append((mod.name, repr(e)))
 
           if failed:
               print("IMPORT FAILURES:")
               for name, err in failed:
                   print(f"  {name}: {err}")
               sys.exit(1)
-          print("All first-party modules imported cleanly.")
+          print("All app.* modules imported cleanly.")
           PY

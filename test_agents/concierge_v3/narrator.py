@@ -18,8 +18,8 @@ from google.adk.tools import FunctionTool
 
 from .player_state import get_player
 
-
 # ── Charon voice reference (used by narrator to write his dialogue) ───────────
+
 
 def get_charon_voice() -> dict:
     """
@@ -46,17 +46,17 @@ def get_charon_voice() -> dict:
             "Addresses the player informally until they've earned it.",
         ],
         "euphemisms": {
-            "kill":      "conclude the matter",
-            "murder":    "the arrangement",
-            "target":    "the subject",
-            "contract":  "the request",
+            "kill": "conclude the matter",
+            "murder": "the arrangement",
+            "target": "the subject",
+            "contract": "the request",
             "assassination": "the particular service",
         },
         "examples": [
-            "\"Good evening, Mr. [name]. Room 812. The view faces east. People sleep better "
-            "when they can see the dawn coming.\"",
+            '"Good evening, Mr. [name]. Room 812. The view faces east. People sleep better '
+            'when they can see the dawn coming."',
             "\"There's a matter that requires a certain kind of attention. The guest in question "
-            "has expressed a preference for discretion — and, I think, for speed.\"",
+            'has expressed a preference for discretion — and, I think, for speed."',
             "\"I wasn't certain it would be you. I'm... glad it was.\"",
         ],
     }
@@ -137,19 +137,19 @@ def get_character_voice(character_name: str) -> dict:
             "style": "Direct, precise, contained fury beneath a professional surface.",
             "cadence": "Clipped. Commands, not requests. Pauses mean something.",
             "never": "Small talk. Gratitude freely given. Vulnerability without cause.",
-            "examples": ["\"You have five minutes. Use them.\"", "\"That name is not welcome here.\""],
+            "examples": ['"You have five minutes. Use them."', '"That name is not welcome here."'],
         },
         "the adjudicator": {
             "style": "Surgically precise. Every sentence is a verdict.",
             "cadence": "No wasted words. No emotion. Absolute authority.",
             "never": "Repeats herself. Shows doubt. Accepts excuses.",
-            "examples": ["\"Your marker has been called. You have three days.\""],
+            "examples": ['"Your marker has been called. You have three days."'],
         },
         "zero": {
             "style": "Quiet. Almost gentle. Worse for it.",
             "cadence": "Very few words. When he speaks, it matters.",
             "never": "Explains himself. Expresses anger directly.",
-            "examples": ["\"I respect you.\" *pause* \"That won't change what happens.\""],
+            "examples": ['"I respect you." *pause* "That won\'t change what happens."'],
         },
     }
     key = character_name.lower().strip()

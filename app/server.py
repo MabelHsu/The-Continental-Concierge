@@ -23,17 +23,16 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
-
 from google.cloud import aiplatform
-from vertexai.preview import agent_engines
+from pydantic import BaseModel
+from vertexai import agent_engines
 
 from app.tools.db import close_pool, fetch_all
 from app.tools.player_tools import (
-    get_player,
     create_player_character,
     get_available_missions,
     get_inventory,
+    get_player,
 )
 from app.tools.world_state_tools import get_world_state
 
@@ -52,12 +51,13 @@ app = FastAPI(
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 
-PROJECT_ID      = os.environ.get("GOOGLE_CLOUD_PROJECT", "")
+PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "")
 # GOOGLE_CLOUD_LOCATION matches the Vertex AI standard env var name and the
 # value documented in .env.template. (Fallback to GOOGLE_CLOUD_REGION kept
 # as a transitional alias so a stale shell doesn't break bring-up.)
-LOCATION        = os.environ.get("GOOGLE_CLOUD_LOCATION") \
-                   or os.environ.get("GOOGLE_CLOUD_REGION", "us-central1")
+LOCATION = os.environ.get("GOOGLE_CLOUD_LOCATION") or os.environ.get(
+    "GOOGLE_CLOUD_REGION", "us-central1"
+)
 AGENT_ENGINE_ID = os.environ.get("AGENT_ENGINE_ID", "")
 
 # In-memory session registry: session_key → {agent_session, turn_count}
@@ -66,6 +66,7 @@ _sessions: dict = {}
 
 
 # ── Request / Response Models ─────────────────────────────────────────────────
+
 
 class ChatRequest(BaseModel):
     message: str
@@ -98,6 +99,7 @@ class MissionsResponse(BaseModel):
 
 # ── Startup / Shutdown ────────────────────────────────────────────────────────
 
+
 @app.on_event("startup")
 async def startup():
     if PROJECT_ID:
@@ -113,6 +115,7 @@ async def shutdown():
 
 # ── Health ────────────────────────────────────────────────────────────────────
 
+
 @app.get("/health")
 async def health():
     """Liveness probe."""
@@ -124,6 +127,7 @@ async def health():
 
 
 # ── Chat — Main Gameplay Loop ─────────────────────────────────────────────────
+
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
@@ -197,6 +201,7 @@ async def chat(request: ChatRequest):
 
 # ── Player Endpoints ──────────────────────────────────────────────────────────
 
+
 @app.get("/player/{session_id}", response_model=PlayerResponse)
 async def get_player_state(session_id: str):
     """
@@ -253,6 +258,7 @@ async def get_player_inventory(session_id: str):
 
 # ── World State ───────────────────────────────────────────────────────────────
 
+
 @app.get("/world-state")
 async def world_state():
     """Current story state: day, phase, crisis level, hotel status."""
@@ -260,6 +266,7 @@ async def world_state():
 
 
 # ── NPC Roster ────────────────────────────────────────────────────────────────
+
 
 @app.get("/characters")
 async def list_characters(status: str = Query(default="active")):
@@ -289,6 +296,7 @@ async def list_characters(status: str = Query(default="active")):
 
 # ── Debts Ledger ──────────────────────────────────────────────────────────────
 
+
 @app.get("/debts")
 async def list_debts(status: str = Query(default="outstanding")):
     """List debts and markers, defaulting to outstanding."""
@@ -308,6 +316,7 @@ async def list_debts(status: str = Query(default="outstanding")):
 
 
 # ── Active Violations ─────────────────────────────────────────────────────────
+
 
 @app.get("/violations")
 async def list_violations():

@@ -11,7 +11,6 @@ No database: hardcoded state that evolves as you test.
 from google.adk.agents import Agent
 from google.adk.tools import FunctionTool
 
-
 # ── Mutable world state ───────────────────────────────────────────────────────
 # Using a dict so tools can modify it during a session (simulates DB writes).
 
@@ -24,29 +23,84 @@ _WORLD_STATE = {
 }
 
 _LOCATIONS = {
-    "winston": {"location": "The Continental, New York — Manager's Office", "since_phase": "afternoon"},
+    "winston": {
+        "location": "The Continental, New York — Manager's Office",
+        "since_phase": "afternoon",
+    },
     "john": {"location": "The Continental, New York — Lobby", "since_phase": "evening"},
     "sofia": {"location": "Casablanca Continental — Manager's Suite", "since_phase": "morning"},
     "charon": {"location": "The Continental, New York — Front Desk", "since_phase": "dawn"},
     "berrada": {"location": "Unknown — last seen Casablanca Medina", "since_phase": "morning"},
-    "the adjudicator": {"location": "The Continental, New York — Meeting Room 3", "since_phase": "afternoon"},
+    "the adjudicator": {
+        "location": "The Continental, New York — Meeting Room 3",
+        "since_phase": "afternoon",
+    },
 }
 
 _EVENT_LOG = [
-    {"day": 0, "phase": "dawn", "type": "excommunicado_decree", "description": "High Table issues excommunicado decree against John Wick. All Continental services suspended worldwide.", "characters": ["john", "high_table"]},
-    {"day": 0, "phase": "morning", "type": "contract_posted", "description": "Open contract on John Wick posted — 14 million gold. Any operator may collect.", "characters": ["john", "high_table"]},
-    {"day": 0, "phase": "afternoon", "type": "adjudicator_arrival", "description": "The Adjudicator arrives at the Continental New York to investigate rule violations.", "characters": ["the adjudicator", "winston"]},
-    {"day": 1, "phase": "evening", "type": "current", "description": "John Wick present in the Continental lobby. Excommunication technically bars him, but no action taken yet.", "characters": ["john", "charon"]},
+    {
+        "day": 0,
+        "phase": "dawn",
+        "type": "excommunicado_decree",
+        "description": "High Table issues excommunicado decree against John Wick. All Continental services suspended worldwide.",
+        "characters": ["john", "high_table"],
+    },
+    {
+        "day": 0,
+        "phase": "morning",
+        "type": "contract_posted",
+        "description": "Open contract on John Wick posted — 14 million gold. Any operator may collect.",
+        "characters": ["john", "high_table"],
+    },
+    {
+        "day": 0,
+        "phase": "afternoon",
+        "type": "adjudicator_arrival",
+        "description": "The Adjudicator arrives at the Continental New York to investigate rule violations.",
+        "characters": ["the adjudicator", "winston"],
+    },
+    {
+        "day": 1,
+        "phase": "evening",
+        "type": "current",
+        "description": "John Wick present in the Continental lobby. Excommunication technically bars him, but no action taken yet.",
+        "characters": ["john", "charon"],
+    },
 ]
 
 _DEADLINES = [
-    {"id": "dl001", "title": "John Wick contract", "description": "Open contract remains active until fulfilled or rescinded.", "deadline_day": None, "deadline_phase": None, "urgency": "high", "characters": ["john"]},
-    {"id": "dl002", "title": "Adjudicator ruling", "description": "The Adjudicator must deliver her ruling on Winston within 48 hours of arriving.", "deadline_day": 3, "deadline_phase": "afternoon", "urgency": "critical", "characters": ["the adjudicator", "winston"]},
-    {"id": "dl003", "title": "Marker: John → Winston", "description": "Winston's marker on John has no stated deadline, but tensions are escalating.", "deadline_day": None, "deadline_phase": None, "urgency": "medium", "characters": ["john", "winston"]},
+    {
+        "id": "dl001",
+        "title": "John Wick contract",
+        "description": "Open contract remains active until fulfilled or rescinded.",
+        "deadline_day": None,
+        "deadline_phase": None,
+        "urgency": "high",
+        "characters": ["john"],
+    },
+    {
+        "id": "dl002",
+        "title": "Adjudicator ruling",
+        "description": "The Adjudicator must deliver her ruling on Winston within 48 hours of arriving.",
+        "deadline_day": 3,
+        "deadline_phase": "afternoon",
+        "urgency": "critical",
+        "characters": ["the adjudicator", "winston"],
+    },
+    {
+        "id": "dl003",
+        "title": "Marker: John → Winston",
+        "description": "Winston's marker on John has no stated deadline, but tensions are escalating.",
+        "deadline_day": None,
+        "deadline_phase": None,
+        "urgency": "medium",
+        "characters": ["john", "winston"],
+    },
 ]
 
 
 # ── Mock tool functions ───────────────────────────────────────────────────────
+
 
 def get_world_state() -> dict:
     """
@@ -58,7 +112,12 @@ def get_world_state() -> dict:
     return {
         **_WORLD_STATE,
         "open_contracts": [
-            {"target": "John Wick", "value": "14 million gold", "status": "open", "posted_by": "High Table"},
+            {
+                "target": "John Wick",
+                "value": "14 million gold",
+                "status": "open",
+                "posted_by": "High Table",
+            },
         ],
         "active_events": [
             "Adjudicator present — all Continental management under review.",
@@ -88,6 +147,7 @@ _NAME_ALIASES = {
     "the adjudicator": "the adjudicator",
     "adjudicator": "the adjudicator",
 }
+
 
 def _normalize(name: str) -> str:
     """Map a free-text character name to its canonical location key."""
@@ -120,7 +180,9 @@ def get_current_locations(characters: list = None) -> dict:
     result = {}
     for name in characters:
         canonical = _normalize(name)
-        data = _LOCATIONS.get(canonical, {"location": "unknown — not currently tracked", "since_phase": "unknown"})
+        data = _LOCATIONS.get(
+            canonical, {"location": "unknown — not currently tracked", "since_phase": "unknown"}
+        )
         result[name] = {"canonical_key": canonical, **data}
     return {
         "locations": result,
@@ -128,7 +190,9 @@ def get_current_locations(characters: list = None) -> dict:
     }
 
 
-def get_recent_events(day: int = None, phase: str = None, character: str = None, limit: int = 5) -> dict:
+def get_recent_events(
+    day: int = None, phase: str = None, character: str = None, limit: int = 5
+) -> dict:
     """
     Query the event log with optional filters.
 
@@ -172,42 +236,52 @@ def detect_collisions() -> dict:
     # Check: excommunicado on Continental grounds
     john_loc = _LOCATIONS.get("john", {})
     if "continental" in john_loc.get("location", "").lower():
-        collisions.append({
-            "type": "excommunicado_on_grounds",
-            "severity": 9,
-            "details": "John Wick (excommunicado) is physically present in The Continental. This is a direct rule violation.",
-            "characters": ["john"],
-            "implied_rule": "Excommunicado may not use Continental services or grounds.",
-        })
+        collisions.append(
+            {
+                "type": "excommunicado_on_grounds",
+                "severity": 9,
+                "details": "John Wick (excommunicado) is physically present in The Continental. This is a direct rule violation.",
+                "characters": ["john"],
+                "implied_rule": "Excommunicado may not use Continental services or grounds.",
+            }
+        )
 
     # Check: Adjudicator + Winston in same location
     adj_loc = _LOCATIONS.get("the adjudicator", {})
     win_loc = _LOCATIONS.get("winston", {})
-    if "continental, new york" in adj_loc.get("location", "").lower() and \
-       "continental, new york" in win_loc.get("location", "").lower():
-        collisions.append({
-            "type": "investigation_in_progress",
-            "severity": 7,
-            "details": "The Adjudicator and Winston are in the same building. The investigation is live.",
-            "characters": ["the adjudicator", "winston"],
-            "implied_rule": "High Table investigation supersedes Continental management authority.",
-        })
+    if (
+        "continental, new york" in adj_loc.get("location", "").lower()
+        and "continental, new york" in win_loc.get("location", "").lower()
+    ):
+        collisions.append(
+            {
+                "type": "investigation_in_progress",
+                "severity": 7,
+                "details": "The Adjudicator and Winston are in the same building. The investigation is live.",
+                "characters": ["the adjudicator", "winston"],
+                "implied_rule": "High Table investigation supersedes Continental management authority.",
+            }
+        )
 
     # Check: upcoming deadlines
     for dl in _DEADLINES:
         if dl["urgency"] == "critical":
-            collisions.append({
-                "type": "critical_deadline",
-                "severity": 8,
-                "details": f"DEADLINE: {dl['title']} — {dl['description']}",
-                "characters": dl["characters"],
-            })
+            collisions.append(
+                {
+                    "type": "critical_deadline",
+                    "severity": 8,
+                    "details": f"DEADLINE: {dl['title']} — {dl['description']}",
+                    "characters": dl["characters"],
+                }
+            )
 
     return {
         "collision_count": len(collisions),
         "collisions": sorted(collisions, key=lambda x: x["severity"], reverse=True),
         "highest_severity": max((c["severity"] for c in collisions), default=0),
-        "recommendation": "Escalate to management immediately." if any(c["severity"] >= 8 for c in collisions) else "Monitor.",
+        "recommendation": "Escalate to management immediately."
+        if any(c["severity"] >= 8 for c in collisions)
+        else "Monitor.",
     }
 
 

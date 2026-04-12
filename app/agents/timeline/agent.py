@@ -10,19 +10,16 @@ from google.adk.tools import FunctionTool
 
 from app.shared.config import config
 from app.tools.timeline_tools import (
-    get_current_locations,
-    move_character,
-    log_event,
-    get_timeline,
-    detect_collisions,
-    get_upcoming_deadlines,
     check_character_availability,
+    detect_collisions,
+    get_current_locations,
+    get_timeline,
+    get_upcoming_deadlines,
+    log_event,
+    move_character,
 )
 
-
-TIMELINE_INSTRUCTION = open(
-    "app/agents/timeline/prompt.md", "r"
-).read()
+TIMELINE_INSTRUCTION = open("app/agents/timeline/prompt.md", "r").read()
 
 timeline_agent = Agent(
     name="timeline",

@@ -11,7 +11,6 @@ any cloud infrastructure.
 from google.adk.agents import Agent
 from google.adk.tools import FunctionTool
 
-
 # ── Mock data store ───────────────────────────────────────────────────────────
 
 _CHARACTERS = {
@@ -220,6 +219,7 @@ _LORE_CORPUS = [
 
 # ── Mock tool functions ───────────────────────────────────────────────────────
 
+
 def lookup_character(name: str) -> dict:
     """
     Retrieve a full character dossier by name.
@@ -278,10 +278,7 @@ def lookup_rule(topic: str) -> dict:
         "source": "mock_database",
         "confidence": "high",
         "data": None,
-        "message": (
-            f"No specific rule for '{topic}'. "
-            f"Try: {', '.join(_RULES.keys())}."
-        ),
+        "message": (f"No specific rule for '{topic}'. Try: {', '.join(_RULES.keys())}."),
     }
 
 
@@ -301,7 +298,8 @@ def search_lore(query: str) -> dict:
     for entry in _LORE_CORPUS:
         # Simple keyword overlap score
         score = sum(
-            1 for word in query_lower.split()
+            1
+            for word in query_lower.split()
             if word in entry["topic"] or word in entry["text"].lower()
         )
         if score > 0:

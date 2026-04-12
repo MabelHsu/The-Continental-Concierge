@@ -21,13 +21,14 @@ import pytest
 # collectable; the skip marker below makes pytest skip this file cleanly
 # until Phase 3 grows `execute_returning`.
 try:
+    from app.tools.consistency_tools import check_consistency  # noqa: F401
     from app.tools.db import (  # noqa: F401
-        fetch_one,
-        fetch_all,
         execute,
         execute_returning,
+        fetch_all,
+        fetch_one,
     )
-    from app.tools.consistency_tools import check_consistency  # noqa: F401
+
     _PHASE3_READY = True
     _PHASE3_SKIP_REASON = ""
 except ImportError as _import_err:
@@ -53,7 +54,9 @@ async def eval_detects_location_collision() -> EvalResult:
     at different locations.
     """
     sofia = await fetch_one("SELECT id FROM characters WHERE name = 'Sofia Al-Azwar'")
-    loc1 = await fetch_one("SELECT id FROM locations WHERE name LIKE '%New York%' AND type = 'continental'")
+    loc1 = await fetch_one(
+        "SELECT id FROM locations WHERE name LIKE '%New York%' AND type = 'continental'"
+    )
     loc2 = await fetch_one("SELECT id FROM locations WHERE name = 'The Red Circle'")
 
     # Create two simultaneous events with Sofia at different locations
@@ -64,7 +67,8 @@ async def eval_detects_location_collision() -> EvalResult:
         VALUES (99, 'evening', 'Test Event A', 'Sofia at Continental', $1,
                 'meeting', ARRAY[$2]::uuid[], TRUE, 999)
         """,
-        loc1["id"], sofia["id"],
+        loc1["id"],
+        sofia["id"],
     )
     await execute(
         """
@@ -73,17 +77,14 @@ async def eval_detects_location_collision() -> EvalResult:
         VALUES (99, 'evening', 'Test Event B', 'Sofia at Red Circle', $1,
                 'social', ARRAY[$2]::uuid[], TRUE, 999)
         """,
-        loc2["id"], sofia["id"],
+        loc2["id"],
+        sofia["id"],
     )
 
     # Check timeline conflicts
-    conflicts = await fetch_all(
-        "SELECT * FROM timeline_conflicts WHERE story_day = 99"
-    )
+    conflicts = await fetch_all("SELECT * FROM timeline_conflicts WHERE story_day = 99")
 
-    passed = len(conflicts) > 0 and any(
-        c["character_name"] == "Sofia Al-Azwar" for c in conflicts
-    )
+    passed = len(conflicts) > 0 and any(c["character_name"] == "Sofia Al-Azwar" for c in conflicts)
 
     # Cleanup
     await execute("DELETE FROM events WHERE story_day = 99")
@@ -108,9 +109,8 @@ async def eval_detects_consecrated_ground_violation() -> EvalResult:
         state_changes={"conflict": True},
     )
 
-    passed = (
-        not result["passed"]
-        or any(i["type"] == "consecrated_ground_violation" for i in result["issues"])
+    passed = not result["passed"] or any(
+        i["type"] == "consecrated_ground_violation" for i in result["issues"]
     )
 
     return EvalResult(
@@ -125,9 +125,7 @@ async def eval_detects_deceased_character() -> EvalResult:
     Test: System flags when a deceased character appears in a scene.
     """
     # Temporarily kill a character
-    await execute(
-        "UPDATE characters SET status = 'deceased' WHERE name = 'Cassian'"
-    )
+    await execute("UPDATE characters SET status = 'deceased' WHERE name = 'Cassian'")
 
     result = check_consistency(
         narrative="Cassian walked into the lobby and ordered a drink.",
@@ -138,14 +136,10 @@ async def eval_detects_deceased_character() -> EvalResult:
         state_changes={},
     )
 
-    passed = any(
-        i["type"] == "deceased_character_active" for i in result["issues"]
-    )
+    passed = any(i["type"] == "deceased_character_active" for i in result["issues"])
 
     # Restore
-    await execute(
-        "UPDATE characters SET status = 'active' WHERE name = 'Cassian'"
-    )
+    await execute("UPDATE characters SET status = 'active' WHERE name = 'Cassian'")
 
     return EvalResult(
         name="deceased_character_detection",
@@ -169,10 +163,7 @@ async def eval_detects_phantom_debt() -> EvalResult:
 
     # Check if phantom debt warning is raised
     # (Akira has a debt TO the Adjudicator, not FROM Charon)
-    phantom_warnings = [
-        w for w in result["warnings"]
-        if w["type"] == "phantom_debt_reference"
-    ]
+    phantom_warnings = [w for w in result["warnings"] if w["type"] == "phantom_debt_reference"]
 
     passed = len(phantom_warnings) > 0
 
@@ -187,9 +178,7 @@ async def eval_detects_excommunicado_on_grounds() -> EvalResult:
     """
     Test: System warns when an excommunicado character is at a Continental.
     """
-    await execute(
-        "UPDATE characters SET status = 'excommunicado' WHERE name = 'Bowery King'"
-    )
+    await execute("UPDATE characters SET status = 'excommunicado' WHERE name = 'Bowery King'")
 
     result = check_consistency(
         narrative="The Bowery King strode into the Continental lobby.",
@@ -200,17 +189,12 @@ async def eval_detects_excommunicado_on_grounds() -> EvalResult:
         state_changes={},
     )
 
-    excom_warnings = [
-        w for w in result["warnings"]
-        if w["type"] == "excommunicado_on_grounds"
-    ]
+    excom_warnings = [w for w in result["warnings"] if w["type"] == "excommunicado_on_grounds"]
 
     passed = len(excom_warnings) > 0
 
     # Restore
-    await execute(
-        "UPDATE characters SET status = 'active' WHERE name = 'Bowery King'"
-    )
+    await execute("UPDATE characters SET status = 'active' WHERE name = 'Bowery King'")
 
     return EvalResult(
         name="excommunicado_detection",
@@ -241,11 +225,13 @@ async def run_all_evals():
             status = "PASS" if result.passed else "FAIL"
             print(f"  [{status}] {result.name}: {result.details}")
         except Exception as e:
-            results.append(EvalResult(
-                name=eval_fn.__name__,
-                passed=False,
-                details=f"Exception: {e}",
-            ))
+            results.append(
+                EvalResult(
+                    name=eval_fn.__name__,
+                    passed=False,
+                    details=f"Exception: {e}",
+                )
+            )
             print(f"  [ERROR] {eval_fn.__name__}: {e}")
 
     total = len(results)

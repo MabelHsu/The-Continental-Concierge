@@ -15,12 +15,12 @@ async def get_debts(
 ) -> list[dict]:
     """
     Query debts and markers with optional filters.
-    
+
     Args:
         character_name: Filter by creditor or debtor name
         status: Filter by status (default: outstanding)
         marker_type: Filter by type (blood_oath, marker, favor, debt, promise, threat)
-    
+
     Returns:
         List of debts with creditor/debtor names and details.
     """
@@ -37,7 +37,7 @@ async def create_debt(
 ) -> dict:
     """
     Record a new debt or marker.
-    
+
     Args:
         creditor_name: Who is owed
         debtor_name: Who owes
@@ -45,7 +45,7 @@ async def create_debt(
         description: What the debt is for
         value: Severity/importance (1-10)
         witness_name: Optional witness
-    
+
     Returns:
         The created debt record.
     """
@@ -59,12 +59,12 @@ async def update_debt_status(
 ) -> dict:
     """
     Update the status of a debt (called_in, fulfilled, betrayed, etc.).
-    
+
     Args:
         debt_id: The debt to update
         new_status: New status
         notes: Explanation
-    
+
     Returns:
         Updated debt and any cascading effects.
     """
@@ -74,10 +74,10 @@ async def update_debt_status(
 async def get_relationships(character_name: str) -> list[dict]:
     """
     Get all relationships for a character.
-    
+
     Args:
         character_name: The character to look up
-    
+
     Returns:
         List of relationships with other characters.
     """
@@ -93,14 +93,14 @@ async def update_relationship(
 ) -> dict:
     """
     Update a relationship between two characters.
-    
+
     Args:
         character_a: First character
         character_b: Second character
         new_type: New relationship type (optional)
         strength_delta: Change in strength -100 to +100 (optional)
         notes: What caused the change
-    
+
     Returns:
         Updated relationship.
     """
@@ -110,10 +110,10 @@ async def update_relationship(
 async def get_reputation(character_name: str) -> dict:
     """
     Get a character's reputation score and recent changes.
-    
+
     Args:
         character_name: Character to check
-    
+
     Returns:
         Reputation score and list of recent changes with causes.
     """
@@ -127,12 +127,12 @@ async def modify_reputation(
 ) -> dict:
     """
     Change a character's reputation score.
-    
+
     Args:
         character_name: Who to modify
         delta: Change amount (-100 to +100)
         reason: Why the change happened
-    
+
     Returns:
         New reputation score and any threshold effects.
     """
@@ -142,7 +142,7 @@ async def modify_reputation(
 async def get_faction_standing() -> list[dict]:
     """
     Get current influence standings for all factions.
-    
+
     Returns:
         Ranked list of factions by influence.
     """

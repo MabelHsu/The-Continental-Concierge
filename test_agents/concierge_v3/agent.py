@@ -33,25 +33,23 @@ from google.adk.agents import Agent
 from google.adk.tools import FunctionTool
 from google.adk.tools.agent_tool import AgentTool
 
+from .archivist import archivist_agent
+from .ledger import ledger_agent
+from .narrator import narrator_agent
 from .onboarding import onboarding_agent
-from .narrator   import narrator_agent
-from .archivist  import archivist_agent
-from .ledger     import ledger_agent
-from .timeline   import timeline_agent
-
 from .player_state import (
-    get_player,
-    get_available_missions,
     accept_mission,
     complete_mission,
+    get_available_missions,
+    get_player,
 )
-
+from .timeline import timeline_agent
 
 # ── Wrap data agents as callable tools ────────────────────────────────────────
 
 archivist_tool = AgentTool(agent=archivist_agent)
-ledger_tool    = AgentTool(agent=ledger_agent)
-timeline_tool  = AgentTool(agent=timeline_agent)
+ledger_tool = AgentTool(agent=ledger_agent)
+timeline_tool = AgentTool(agent=timeline_agent)
 
 
 # ── Orchestrator ──────────────────────────────────────────────────────────────
@@ -202,8 +200,8 @@ Charon should be nearby but not intrusive."
         timeline_tool,
     ],
     sub_agents=[
-        onboarding_agent,   # Takes over for check-in (when onboarding_complete False)
-        narrator_agent,     # Takes over for final prose (when onboarding complete)
+        onboarding_agent,  # Takes over for check-in (when onboarding_complete False)
+        narrator_agent,  # Takes over for final prose (when onboarding complete)
     ],
     generate_content_config={
         "temperature": 0.3,

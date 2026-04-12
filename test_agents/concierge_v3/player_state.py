@@ -18,13 +18,12 @@ Change the two toggles at the top of this file:
 
 from typing import Optional
 
-
 # ── TEST CONFIGURATION ────────────────────────────────────────────────────────
 # Change these to switch scenarios without touching any other file.
 
-MOCK_ONBOARDING_COMPLETE = False   # Set True to skip onboarding
+MOCK_ONBOARDING_COMPLETE = False  # Set True to skip onboarding
 
-MOCK_PATH = "mystery"              # "mystery" | "custom" — only used when False above
+MOCK_PATH = "mystery"  # "mystery" | "custom" — only used when False above
 
 
 # ── Live state dict ───────────────────────────────────────────────────────────
@@ -32,61 +31,57 @@ MOCK_PATH = "mystery"              # "mystery" | "custom" — only used when Fal
 
 _STATE: dict = {
     # Identity
-    "session_id":           "test-session-001",
-    "name":                 None,
-    "alias":                None,
-    "title":                None,
-    "archetype":            None,
-    "backstory":            None,
-
+    "session_id": "test-session-001",
+    "name": None,
+    "alias": None,
+    "title": None,
+    "archetype": None,
+    "backstory": None,
     # Onboarding
-    "onboarding_complete":  MOCK_ONBOARDING_COMPLETE,
-    "creation_path":        "custom" if MOCK_ONBOARDING_COMPLETE else MOCK_PATH,
-    "onboarding_step":      5 if MOCK_ONBOARDING_COMPLETE else 0,
-    "identity_revealed":    MOCK_ONBOARDING_COMPLETE,
-    "identity_clues":       [],
-
+    "onboarding_complete": MOCK_ONBOARDING_COMPLETE,
+    "creation_path": "custom" if MOCK_ONBOARDING_COMPLETE else MOCK_PATH,
+    "onboarding_step": 5 if MOCK_ONBOARDING_COMPLETE else 0,
+    "identity_revealed": MOCK_ONBOARDING_COMPLETE,
+    "identity_clues": [],
     # Stats
-    "reputation":           55 if MOCK_ONBOARDING_COMPLETE else 50,
-    "combat_rating":        50,
-    "influence":            30,
-    "gold_coins":           7,
-
+    "reputation": 55 if MOCK_ONBOARDING_COMPLETE else 50,
+    "combat_rating": 50,
+    "influence": 30,
+    "gold_coins": 7,
     # World position
-    "faction_name":         "Independent" if MOCK_ONBOARDING_COMPLETE else None,
-    "current_location":     "Continental Hotel Lobby",
-    "is_continental":       True,
-    "status":               "active",
-
+    "faction_name": "Independent" if MOCK_ONBOARDING_COMPLETE else None,
+    "current_location": "Continental Hotel Lobby",
+    "is_continental": True,
+    "status": "active",
     # Missions
     "active_mission_title": None,
-    "active_mission_type":  None,
-    "missions_completed":   0,
-    "missions_failed":      0,
-
+    "active_mission_type": None,
+    "missions_completed": 0,
+    "missions_failed": 0,
     # Inventory — pre-seeded if onboarding is bypassed
     "inventory": (
         [
             {"name": "Suppressed Pistol", "type": "weapon", "quantity": 1},
-            {"name": "Clean Passport",    "type": "document", "quantity": 1},
+            {"name": "Clean Passport", "type": "document", "quantity": 1},
         ]
-        if MOCK_ONBOARDING_COMPLETE else []
+        if MOCK_ONBOARDING_COMPLETE
+        else []
     ),
-
     "faction_standings": (
         [
-            {"faction": "The Continental",        "standing": 70},
-            {"faction": "High Table",             "standing": 50},
-            {"faction": "Bowery King's Network",  "standing": 45},
-            {"faction": "Tarasov Organization",   "standing": 30},
+            {"faction": "The Continental", "standing": 70},
+            {"faction": "High Table", "standing": 50},
+            {"faction": "Bowery King's Network", "standing": 45},
+            {"faction": "Tarasov Organization", "standing": 30},
         ]
-        if MOCK_ONBOARDING_COMPLETE else []
+        if MOCK_ONBOARDING_COMPLETE
+        else []
     ),
 }
 
 # Backfill name/alias when starting in complete mode
 if MOCK_ONBOARDING_COMPLETE:
-    _STATE["name"]  = "Ghost"
+    _STATE["name"] = "Ghost"
     _STATE["alias"] = "Ghost"
     _STATE["archetype"] = "assassin"
 
@@ -147,6 +142,7 @@ _MISSIONS = [
 # These are registered as FunctionTools on the orchestrator and onboarding agent.
 # Because they operate on the module-level _STATE dict, state persists across calls.
 
+
 def get_player(session_id: str = "test-session-001") -> dict:
     """
     Get the current player character state.
@@ -194,12 +190,18 @@ def update_player(
     Returns:
         Updated player state dict.
     """
-    if name        is not None: _STATE["name"]           = name
-    if alias       is not None: _STATE["alias"]          = alias
-    if archetype   is not None: _STATE["archetype"]      = archetype
-    if faction_name is not None: _STATE["faction_name"]  = faction_name
-    if backstory   is not None: _STATE["backstory"]      = backstory
-    if onboarding_step is not None: _STATE["onboarding_step"] = onboarding_step
+    if name is not None:
+        _STATE["name"] = name
+    if alias is not None:
+        _STATE["alias"] = alias
+    if archetype is not None:
+        _STATE["archetype"] = archetype
+    if faction_name is not None:
+        _STATE["faction_name"] = faction_name
+    if backstory is not None:
+        _STATE["backstory"] = backstory
+    if onboarding_step is not None:
+        _STATE["onboarding_step"] = onboarding_step
     if identity_clue is not None:
         _STATE["identity_clues"].append(identity_clue)
     return dict(_STATE)
@@ -220,7 +222,7 @@ def complete_onboarding(session_id: str = "test-session-001") -> dict:
         Completed player state dict.
     """
     _STATE["onboarding_complete"] = True
-    _STATE["identity_revealed"]   = True
+    _STATE["identity_revealed"] = True
 
     # Seed inventory by archetype
     archetype = _STATE.get("archetype") or "assassin"
@@ -228,10 +230,10 @@ def complete_onboarding(session_id: str = "test-session-001") -> dict:
 
     # Seed basic faction standings
     _STATE["faction_standings"] = [
-        {"faction": "The Continental",        "standing": 70},
-        {"faction": "High Table",             "standing": 50},
-        {"faction": "Bowery King's Network",  "standing": 45},
-        {"faction": "Tarasov Organization",   "standing": 30},
+        {"faction": "The Continental", "standing": 70},
+        {"faction": "High Table", "standing": 50},
+        {"faction": "Bowery King's Network", "standing": 45},
+        {"faction": "Tarasov Organization", "standing": 30},
     ]
 
     return dict(_STATE)
@@ -252,10 +254,7 @@ def get_available_missions(
         List of available mission dicts ordered by priority.
     """
     rep = _STATE.get("reputation", 50)
-    available = [
-        m for m in _MISSIONS
-        if m["requirements"].get("min_reputation", 0) <= rep
-    ]
+    available = [m for m in _MISSIONS if m["requirements"].get("min_reputation", 0) <= rep]
     return available[:limit]
 
 
@@ -281,7 +280,7 @@ def accept_mission(
         return {"error": f"Mission {mission_id} not found."}
 
     _STATE["active_mission_title"] = mission["title"]
-    _STATE["active_mission_type"]  = mission["mission_type"]
+    _STATE["active_mission_type"] = mission["mission_type"]
     return dict(_STATE)
 
 
@@ -306,45 +305,62 @@ def complete_mission(
     if outcome == "success":
         gold = 5
         rep_delta = 10
-        _STATE["gold_coins"]        += gold
-        _STATE["reputation"]         = min(100, _STATE["reputation"] + rep_delta)
+        _STATE["gold_coins"] += gold
+        _STATE["reputation"] = min(100, _STATE["reputation"] + rep_delta)
         _STATE["missions_completed"] += 1
         rewards = {"gold": gold, "reputation": f"+{rep_delta}"}
     elif outcome == "failure":
         rep_delta = -8
-        _STATE["reputation"]    = max(0, _STATE["reputation"] + rep_delta)
+        _STATE["reputation"] = max(0, _STATE["reputation"] + rep_delta)
         _STATE["missions_failed"] += 1
         rewards = {"reputation": str(rep_delta)}
     else:  # complicated
         rep_delta = -3
-        _STATE["reputation"]         = max(0, _STATE["reputation"] + rep_delta)
+        _STATE["reputation"] = max(0, _STATE["reputation"] + rep_delta)
         _STATE["missions_completed"] += 1
         rewards = {"reputation": str(rep_delta)}
 
     _STATE["active_mission_title"] = None
-    _STATE["active_mission_type"]  = None
+    _STATE["active_mission_type"] = None
     return {"outcome": outcome, "rewards": rewards, "player": dict(_STATE)}
 
 
 # ── Internal helpers ───────────────────────────────────────────────────────────
 
+
 def _starting_inventory(archetype: str) -> list:
     kits = {
-        "assassin":          [{"name": "Suppressed Pistol",  "type": "weapon",   "quantity": 1},
-                              {"name": "Clean Passport",      "type": "document", "quantity": 1}],
-        "cleaner":           [{"name": "Burner Phone",        "type": "artifact", "quantity": 1},
-                              {"name": "Continental Coin",    "type": "token",    "quantity": 7}],
-        "fixer":             [{"name": "Contact List",        "type": "intel",    "quantity": 1},
-                              {"name": "Blank Marker",        "type": "document", "quantity": 1}],
-        "information_broker":[{"name": "Dossier Fragment",    "type": "intel",    "quantity": 1},
-                              {"name": "Encrypted Drive",     "type": "artifact", "quantity": 1}],
-        "weapons_dealer":    [{"name": "Custom Pistol",       "type": "weapon",   "quantity": 1},
-                              {"name": "Weapons Cache Key",   "type": "key",      "quantity": 1}],
-        "driver":            [{"name": "Safecar",             "type": "vehicle",  "quantity": 1},
-                              {"name": "Multiple IDs",        "type": "document", "quantity": 1}],
-        "medic":             [{"name": "Field Kit",           "type": "artifact", "quantity": 1},
-                              {"name": "Favour Chip",         "type": "token",    "quantity": 1}],
-        "enforcer":          [{"name": "Reinforced Knuckles", "type": "weapon",   "quantity": 1},
-                              {"name": "Employer Letter",     "type": "document", "quantity": 1}],
+        "assassin": [
+            {"name": "Suppressed Pistol", "type": "weapon", "quantity": 1},
+            {"name": "Clean Passport", "type": "document", "quantity": 1},
+        ],
+        "cleaner": [
+            {"name": "Burner Phone", "type": "artifact", "quantity": 1},
+            {"name": "Continental Coin", "type": "token", "quantity": 7},
+        ],
+        "fixer": [
+            {"name": "Contact List", "type": "intel", "quantity": 1},
+            {"name": "Blank Marker", "type": "document", "quantity": 1},
+        ],
+        "information_broker": [
+            {"name": "Dossier Fragment", "type": "intel", "quantity": 1},
+            {"name": "Encrypted Drive", "type": "artifact", "quantity": 1},
+        ],
+        "weapons_dealer": [
+            {"name": "Custom Pistol", "type": "weapon", "quantity": 1},
+            {"name": "Weapons Cache Key", "type": "key", "quantity": 1},
+        ],
+        "driver": [
+            {"name": "Safecar", "type": "vehicle", "quantity": 1},
+            {"name": "Multiple IDs", "type": "document", "quantity": 1},
+        ],
+        "medic": [
+            {"name": "Field Kit", "type": "artifact", "quantity": 1},
+            {"name": "Favour Chip", "type": "token", "quantity": 1},
+        ],
+        "enforcer": [
+            {"name": "Reinforced Knuckles", "type": "weapon", "quantity": 1},
+            {"name": "Employer Letter", "type": "document", "quantity": 1},
+        ],
     }
     return kits.get(archetype, [])

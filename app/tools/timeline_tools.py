@@ -10,7 +10,7 @@ from typing import Optional
 async def get_current_locations() -> list[dict]:
     """
     Get a map of all locations and who is currently there.
-    
+
     Returns:
         List of locations with characters_present arrays.
     """
@@ -24,12 +24,12 @@ async def move_character(
 ) -> dict:
     """
     Move a character to a new location.
-    
+
     Args:
         character_name: Who to move
         destination: Location name
         reason: Why they're moving
-    
+
     Returns:
         Updated location and any collisions detected.
     """
@@ -47,7 +47,7 @@ async def log_event(
 ) -> dict:
     """
     Record a new event in the timeline.
-    
+
     Args:
         event_type: Type of event
         title: Short title
@@ -56,7 +56,7 @@ async def log_event(
         severity: 1-10
         participants: List of {name, role} dicts
         is_public: Whether other characters would know about it
-    
+
     Returns:
         The created event.
     """
@@ -78,13 +78,13 @@ async def get_timeline(
 async def detect_collisions() -> list[dict]:
     """
     Scan for timeline/spatial conflicts.
-    
+
     Checks for:
     - Hostile characters in the same Continental location
     - Expired mission deadlines
     - Characters in two places at once (data error)
     - Unresolved violations
-    
+
     Returns:
         List of collision objects with type, details, and severity.
     """
@@ -101,7 +101,7 @@ async def get_upcoming_deadlines(within_phases: int = 3) -> list[dict]:
 async def check_character_availability(character_name: str) -> dict:
     """
     Check if a character is available for interaction.
-    
+
     Returns:
         Availability status, current location, and any conflicting obligations.
     """

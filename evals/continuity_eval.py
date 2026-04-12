@@ -12,9 +12,7 @@ Key assertions:
 """
 
 import asyncio
-import json
 from dataclasses import dataclass
-from typing import Optional
 
 import pytest
 
@@ -25,11 +23,12 @@ import pytest
 # keeps `pytest evals/` collectable; the skip marker below makes pytest
 # skip this file cleanly until Phase 3 grows the missing helpers.
 try:
-    from app.tools.db import fetch_one, fetch_all, execute  # noqa: F401
+    from app.tools.db import execute, fetch_all, fetch_one  # noqa: F401
     from app.tools.world_state_tools import (  # noqa: F401
-        initialize_story_state,
         increment_turn,
+        initialize_story_state,
     )
+
     _PHASE3_READY = True
     _PHASE3_SKIP_REASON = ""
 except ImportError as _import_err:
@@ -139,7 +138,7 @@ async def eval_location_change_persists() -> EvalResult:
     Test: Moving a character updates their location in all subsequent queries.
     """
     # Move Sofia to the Red Circle
-    rome = await fetch_one("SELECT id FROM locations WHERE name LIKE '%Rome%'")
+    _rome = await fetch_one("SELECT id FROM locations WHERE name LIKE '%Rome%'")  # setup only
     red_circle = await fetch_one("SELECT id FROM locations WHERE name = 'The Red Circle'")
     sofia = await fetch_one("SELECT id FROM characters WHERE name = 'Sofia Al-Azwar'")
 
@@ -192,9 +191,7 @@ async def eval_reputation_affects_queries() -> EvalResult:
     Test: Reputation changes are reflected in the reputation ledger view.
     """
     # Get initial reputation
-    initial = await fetch_one(
-        "SELECT reputation FROM characters WHERE name = 'Bowery King'"
-    )
+    initial = await fetch_one("SELECT reputation FROM characters WHERE name = 'Bowery King'")
     initial_rep = initial["reputation"]
 
     # Decrease reputation
@@ -205,9 +202,7 @@ async def eval_reputation_affects_queries() -> EvalResult:
     )
 
     # Verify in reputation ledger
-    ledger = await fetch_one(
-        "SELECT * FROM reputation_ledger WHERE name = 'Bowery King'"
-    )
+    ledger = await fetch_one("SELECT * FROM reputation_ledger WHERE name = 'Bowery King'")
 
     passed = ledger is not None and ledger["reputation"] == new_rep
 
@@ -248,12 +243,14 @@ async def run_all_evals():
             status = "PASS" if result.passed else "FAIL"
             print(f"  [{status}] {result.name}: {result.details}")
         except Exception as e:
-            results.append(EvalResult(
-                name=eval_fn.__name__,
-                passed=False,
-                details=f"Exception: {e}",
-                turn_number=-1,
-            ))
+            results.append(
+                EvalResult(
+                    name=eval_fn.__name__,
+                    passed=False,
+                    details=f"Exception: {e}",
+                    turn_number=-1,
+                )
+            )
             print(f"  [ERROR] {eval_fn.__name__}: {e}")
 
     total = len(results)
