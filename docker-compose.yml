@@ -15,7 +15,9 @@
 
 services:
   alloydb-omni:
-    image: gcr.io/alloydb-omni/alloydb-omni:latest
+    # Image moved from gcr.io to Docker Hub. Public, no auth required.
+    # Versioned tag (17.5.0) preferred over :latest for reproducibility.
+    image: google/alloydbomni:17.5.0
     container_name: continental-db
     environment:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-continental-dev}
