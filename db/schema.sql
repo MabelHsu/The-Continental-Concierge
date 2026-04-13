@@ -5,6 +5,11 @@
 -- Requires: AlloyDB with google_ml_tfe and vector extensions enabled
 -- ============================================================================
 
+-- IMPORTANT: vector must be installed by a superuser BEFORE running this script.
+-- On AlloyDB Omni (local dev), run this first:
+--   PGPASSWORD=continental-dev psql -h localhost -U postgres -p 5432 -d continental \
+--     -c "CREATE EXTENSION IF NOT EXISTS vector;"
+-- On cloud AlloyDB, the extension is pre-installed — this line is a no-op.
 CREATE EXTENSION IF NOT EXISTS vector;
 
 -- google_ml_tfe enables the google_ml.embedding() SQL function in cloud AlloyDB.
