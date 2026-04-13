@@ -100,9 +100,7 @@ async def create_debt(
             )
             witness_id = witness["id"] if witness else None
 
-        current_day = await conn.fetchval(
-            "SELECT current_day FROM story_state WHERE id = 1"
-        )
+        current_day = await conn.fetchval("SELECT current_day FROM story_state WHERE id = 1")
 
         row = await conn.fetchrow(
             """
@@ -179,9 +177,7 @@ async def update_debt_status(
         return {"error": f"Debt {debt_id} not found"}
 
     if notes:
-        await execute(
-            "UPDATE debts_markers SET notes = $1 WHERE id = $2", notes, debt_id
-        )
+        await execute("UPDATE debts_markers SET notes = $1 WHERE id = $2", notes, debt_id)
 
     return dict(row)
 
@@ -234,12 +230,8 @@ async def update_relationship(
         Updated or created relationship record.
     """
     async with transaction() as conn:
-        a = await conn.fetchrow(
-            "SELECT id FROM characters WHERE name ILIKE $1", f"%{character_a}%"
-        )
-        b = await conn.fetchrow(
-            "SELECT id FROM characters WHERE name ILIKE $1", f"%{character_b}%"
-        )
+        a = await conn.fetchrow("SELECT id FROM characters WHERE name ILIKE $1", f"%{character_a}%")
+        b = await conn.fetchrow("SELECT id FROM characters WHERE name ILIKE $1", f"%{character_b}%")
         if not a:
             return {"error": f"Character '{character_a}' not found"}
         if not b:
@@ -273,7 +265,7 @@ async def update_relationship(
                 args.append(existing["id"])
                 row = await conn.fetchrow(
                     f"""
-                    UPDATE relationships SET {', '.join(updates)}, updated_at = now()
+                    UPDATE relationships SET {", ".join(updates)}, updated_at = now()
                     WHERE id = ${len(args)}
                     RETURNING id, type, strength
                     """,

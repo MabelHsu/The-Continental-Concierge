@@ -21,9 +21,7 @@ async def get_current_locations() -> list[dict]:
         List of locations with characters_present arrays. Uses v_current_scene view
         which aggregates active characters per location.
     """
-    rows = await fetch_all(
-        "SELECT * FROM v_current_scene ORDER BY location_name"
-    )
+    rows = await fetch_all("SELECT * FROM v_current_scene ORDER BY location_name")
     return [dict(r) for r in rows]
 
 
@@ -259,9 +257,7 @@ async def detect_collisions() -> list[dict]:
         """
     )
     for row in hostile_rows:
-        collisions.append(
-            {"type": "hostile_collision", "severity": 8, **dict(row)}
-        )
+        collisions.append({"type": "hostile_collision", "severity": 8, **dict(row)})
 
     # 2. Rule violations pending adjudication
     violation_rows = await fetch_all(
@@ -274,9 +270,7 @@ async def detect_collisions() -> list[dict]:
         """
     )
     for row in violation_rows:
-        collisions.append(
-            {"type": "pending_violation", **dict(row)}
-        )
+        collisions.append({"type": "pending_violation", **dict(row)})
 
     return collisions
 
@@ -291,9 +285,7 @@ async def get_upcoming_deadlines(within_phases: int = 3) -> list[dict]:
     Returns:
         Missions ordered by deadline day then priority.
     """
-    current = await fetch_one(
-        "SELECT current_day FROM story_state WHERE id = 1"
-    )
+    current = await fetch_one("SELECT current_day FROM story_state WHERE id = 1")
     day = current["current_day"] if current else 1
     # Rough conversion: 5 phases per day
     lookahead_days = (within_phases // 5) + 1
