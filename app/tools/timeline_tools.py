@@ -10,7 +10,7 @@ All functions use the async helpers from db.py — call with `await`.
 
 from typing import Optional
 
-from app.tools.db import execute, fetch_all, fetch_one, transaction
+from app.tools.db import fetch_all, fetch_one, transaction
 
 
 async def get_current_locations() -> list[dict]:

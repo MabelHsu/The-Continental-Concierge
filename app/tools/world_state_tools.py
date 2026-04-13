@@ -13,7 +13,6 @@ from typing import Optional
 
 from app.tools.db import execute, fetch_all, fetch_one
 
-
 # Phase order for advance_time calculations
 _PHASES = ["morning", "afternoon", "evening", "night", "dawn"]
 
@@ -56,9 +55,7 @@ async def advance_time(phases_to_advance: int = 1) -> dict:
     Returns:
         dict with new day, new phase, and how many full days were advanced.
     """
-    current = await fetch_one(
-        "SELECT current_day, current_phase FROM story_state WHERE id = 1"
-    )
+    current = await fetch_one("SELECT current_day, current_phase FROM story_state WHERE id = 1")
     if not current:
         return {"error": "World state not initialised"}
 
