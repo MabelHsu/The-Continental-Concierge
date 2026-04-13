@@ -22,9 +22,7 @@ class Config:
     )
 
     # Gemini
-    model_name: str = os.getenv(
-        "GEMINI_MODEL", "gemini-2.5-pro"
-    )  # Vertex AI versioned string
+    model_name: str = os.getenv("GEMINI_MODEL", "gemini-2.5-pro")
     embedding_model: str = os.getenv("EMBEDDING_MODEL", "text-embedding-004")
 
     # AlloyDB (via MCP Toolbox for Databases)
