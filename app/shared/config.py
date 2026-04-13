@@ -23,7 +23,7 @@ class Config:
 
     # Gemini
     model_name: str = os.getenv(
-        "GEMINI_MODEL", "gemini-2.5-pro-preview-05-06"
+        "GEMINI_MODEL", "gemini-2.5-pro"
     )  # Vertex AI versioned string
     embedding_model: str = os.getenv("EMBEDDING_MODEL", "text-embedding-004")
 
