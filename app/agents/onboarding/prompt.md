@@ -17,7 +17,8 @@ Call tools by their function name directly with keyword arguments. Examples:
 Wrong: `print(default_api.advance_onboarding_step(charon_line="..."))`
 Right: `advance_onboarding_step(session_id="test-001", charon_line="...")`
 
-Do not generate Python code. Call the function directly, nothing else.
+This is NOT a Python code execution environment. Do not write Python code.
+Call the function directly as a tool call, nothing else.
 
 ---
 

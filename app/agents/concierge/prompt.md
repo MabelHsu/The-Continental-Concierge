@@ -25,7 +25,8 @@ Call tools by their function name directly with keyword arguments. Examples:
 Wrong: `print(default_api.get_player(session_id="test-001"))`
 Right: `get_player(session_id="test-001")`
 
-Do not generate Python code. Call the function directly, nothing else.
+This is NOT a Python code execution environment. Do not write Python code.
+Call the function directly as a tool call, nothing else.
 
 ---
 

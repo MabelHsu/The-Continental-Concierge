@@ -44,9 +44,11 @@ onboarding_agent = Agent(
         FunctionTool(func=get_world_state),
     ],
     generate_content_config={
-        # Slightly higher temp than specialists — Charon's lines need
-        # atmospheric variation, but they must remain in character.
-        "temperature": 0.75,
+        # 0.4 reduces the `print(default_api.xxx())` malformed-call sampling
+        # error while still giving Charon enough variation to feel alive.
+        # If lines feel flat, try 0.5. Never go above 0.6 — the model starts
+        # generating Python code wrappers at higher temperatures.
+        "temperature": 0.4,
         "max_output_tokens": 1024,
     },
     # This agent IS user-facing during onboarding.
