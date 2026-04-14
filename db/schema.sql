@@ -31,7 +31,7 @@ $$;
 -- ============================================================================
 
 -- World clock: singleton row tracking story progression
-CREATE TABLE story_state (
+CREATE TABLE IF NOT EXISTS story_state (
     id              INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
     current_day     INTEGER NOT NULL DEFAULT 1,
     current_phase   TEXT NOT NULL DEFAULT 'evening'
@@ -44,7 +44,7 @@ CREATE TABLE story_state (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE factions (
+CREATE TABLE IF NOT EXISTS factions (
     id              SERIAL PRIMARY KEY,
     name            TEXT NOT NULL UNIQUE,
     type            TEXT NOT NULL DEFAULT 'syndicate'
@@ -58,9 +58,9 @@ CREATE TABLE factions (
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE locations (
+CREATE TABLE IF NOT EXISTS locations (
     id              SERIAL PRIMARY KEY,
-    name            TEXT NOT NULL,
+    name            TEXT NOT NULL UNIQUE,
     type            TEXT NOT NULL
                     CHECK (type IN ('hotel_room','hotel_common','hotel_service',
                                     'street','safehouse','territory','landmark','transit','unknown')),
@@ -74,7 +74,7 @@ CREATE TABLE locations (
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE characters (
+CREATE TABLE IF NOT EXISTS characters (
     id              SERIAL PRIMARY KEY,
     name            TEXT NOT NULL UNIQUE,
     alias           TEXT,
@@ -94,9 +94,17 @@ CREATE TABLE characters (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-ALTER TABLE factions ADD CONSTRAINT fk_faction_leader FOREIGN KEY (leader_id) REFERENCES characters(id);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'fk_faction_leader'
+    ) THEN
+        ALTER TABLE factions ADD CONSTRAINT fk_faction_leader FOREIGN KEY (leader_id) REFERENCES characters(id);
+    END IF;
+END
+$$;
 
-CREATE TABLE debts_markers (
+CREATE TABLE IF NOT EXISTS debts_markers (
     id              SERIAL PRIMARY KEY,
     creditor_id     INTEGER NOT NULL REFERENCES characters(id),
     debtor_id       INTEGER NOT NULL REFERENCES characters(id),
@@ -116,7 +124,7 @@ CREATE TABLE debts_markers (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE relationships (
+CREATE TABLE IF NOT EXISTS relationships (
     id              SERIAL PRIMARY KEY,
     character_a_id  INTEGER NOT NULL REFERENCES characters(id),
     character_b_id  INTEGER NOT NULL REFERENCES characters(id),
@@ -133,7 +141,7 @@ CREATE TABLE relationships (
     UNIQUE(character_a_id, character_b_id)
 );
 
-CREATE TABLE events (
+CREATE TABLE IF NOT EXISTS events (
     id              SERIAL PRIMARY KEY,
     day             INTEGER NOT NULL,
     phase           TEXT NOT NULL
@@ -153,7 +161,7 @@ CREATE TABLE events (
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE event_participants (
+CREATE TABLE IF NOT EXISTS event_participants (
     event_id        INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     character_id    INTEGER NOT NULL REFERENCES characters(id),
     role            TEXT NOT NULL DEFAULT 'participant'
@@ -161,7 +169,7 @@ CREATE TABLE event_participants (
     PRIMARY KEY (event_id, character_id)
 );
 
-CREATE TABLE missions (
+CREATE TABLE IF NOT EXISTS missions (
     id              SERIAL PRIMARY KEY,
     title           TEXT NOT NULL,
     requested_by_id INTEGER REFERENCES characters(id),
@@ -187,7 +195,7 @@ CREATE TABLE missions (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE hotel_rules (
+CREATE TABLE IF NOT EXISTS hotel_rules (
     id              SERIAL PRIMARY KEY,
     rule_number     INTEGER NOT NULL UNIQUE,
     title           TEXT NOT NULL,
@@ -199,7 +207,7 @@ CREATE TABLE hotel_rules (
     source          TEXT NOT NULL DEFAULT 'founding_charter'
 );
 
-CREATE TABLE rule_violations (
+CREATE TABLE IF NOT EXISTS rule_violations (
     id              SERIAL PRIMARY KEY,
     rule_id         INTEGER NOT NULL REFERENCES hotel_rules(id),
     violator_id     INTEGER NOT NULL REFERENCES characters(id),
@@ -215,7 +223,7 @@ CREATE TABLE rule_violations (
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE story_snapshots (
+CREATE TABLE IF NOT EXISTS story_snapshots (
     id              SERIAL PRIMARY KEY,
     day             INTEGER NOT NULL,
     phase           TEXT NOT NULL,
@@ -230,7 +238,7 @@ CREATE TABLE story_snapshots (
 -- RETRIEVAL LAYER — Semantic + keyword hybrid search
 -- ============================================================================
 
-CREATE TABLE lore_chunks (
+CREATE TABLE IF NOT EXISTS lore_chunks (
     id              SERIAL PRIMARY KEY,
     category        TEXT NOT NULL
                     CHECK (category IN ('history','rule','tradition','location_lore','character_lore',
@@ -244,7 +252,7 @@ CREATE TABLE lore_chunks (
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE conversation_summaries (
+CREATE TABLE IF NOT EXISTS conversation_summaries (
     id              SERIAL PRIMARY KEY,
     session_id      TEXT NOT NULL,
     day             INTEGER NOT NULL,
@@ -257,7 +265,7 @@ CREATE TABLE conversation_summaries (
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE scene_memories (
+CREATE TABLE IF NOT EXISTS scene_memories (
     id              SERIAL PRIMARY KEY,
     event_id        INTEGER REFERENCES events(id),
     day             INTEGER NOT NULL,
@@ -275,24 +283,24 @@ CREATE TABLE scene_memories (
 -- INDEXES
 -- ============================================================================
 
-CREATE INDEX idx_characters_faction ON characters(faction_id);
-CREATE INDEX idx_characters_status ON characters(status);
-CREATE INDEX idx_characters_location ON characters(current_location_id);
-CREATE INDEX idx_debts_creditor ON debts_markers(creditor_id);
-CREATE INDEX idx_debts_debtor ON debts_markers(debtor_id);
-CREATE INDEX idx_debts_status ON debts_markers(status);
-CREATE INDEX idx_events_day_phase ON events(day, phase);
-CREATE INDEX idx_events_type ON events(event_type);
-CREATE INDEX idx_events_location ON events(location_id);
-CREATE INDEX idx_missions_status ON missions(status);
-CREATE INDEX idx_relationships_chars ON relationships(character_a_id, character_b_id);
-CREATE INDEX idx_violations_violator ON rule_violations(violator_id);
-CREATE INDEX idx_characters_traits ON characters USING GIN(traits);
-CREATE INDEX idx_events_consequences ON events USING GIN(consequences);
+CREATE INDEX IF NOT EXISTS idx_characters_faction ON characters(faction_id);
+CREATE INDEX IF NOT EXISTS idx_characters_status ON characters(status);
+CREATE INDEX IF NOT EXISTS idx_characters_location ON characters(current_location_id);
+CREATE INDEX IF NOT EXISTS idx_debts_creditor ON debts_markers(creditor_id);
+CREATE INDEX IF NOT EXISTS idx_debts_debtor ON debts_markers(debtor_id);
+CREATE INDEX IF NOT EXISTS idx_debts_status ON debts_markers(status);
+CREATE INDEX IF NOT EXISTS idx_events_day_phase ON events(day, phase);
+CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type);
+CREATE INDEX IF NOT EXISTS idx_events_location ON events(location_id);
+CREATE INDEX IF NOT EXISTS idx_missions_status ON missions(status);
+CREATE INDEX IF NOT EXISTS idx_relationships_chars ON relationships(character_a_id, character_b_id);
+CREATE INDEX IF NOT EXISTS idx_violations_violator ON rule_violations(violator_id);
+CREATE INDEX IF NOT EXISTS idx_characters_traits ON characters USING GIN(traits);
+CREATE INDEX IF NOT EXISTS idx_events_consequences ON events USING GIN(consequences);
 
 -- Vector indexes (HNSW at this scale; switch to ScaNN past ~100k rows)
-CREATE INDEX idx_lore_embedding ON lore_chunks USING hnsw(embedding vector_cosine_ops) WITH (m=16, ef_construction=200);
-CREATE INDEX idx_conversation_embedding ON conversation_summaries USING hnsw(embedding vector_cosine_ops) WITH (m=16, ef_construction=200);
-CREATE INDEX idx_scene_embedding ON scene_memories USING hnsw(embedding vector_cosine_ops) WITH (m=16, ef_construction=200);
-CREATE INDEX idx_lore_tags ON lore_chunks USING GIN(tags);
-CREATE INDEX idx_scene_tags ON scene_memories USING GIN(tags);
+CREATE INDEX IF NOT EXISTS idx_lore_embedding ON lore_chunks USING hnsw(embedding vector_cosine_ops) WITH (m=16, ef_construction=200);
+CREATE INDEX IF NOT EXISTS idx_conversation_embedding ON conversation_summaries USING hnsw(embedding vector_cosine_ops) WITH (m=16, ef_construction=200);
+CREATE INDEX IF NOT EXISTS idx_scene_embedding ON scene_memories USING hnsw(embedding vector_cosine_ops) WITH (m=16, ef_construction=200);
+CREATE INDEX IF NOT EXISTS idx_lore_tags ON lore_chunks USING GIN(tags);
+CREATE INDEX IF NOT EXISTS idx_scene_tags ON scene_memories USING GIN(tags);

@@ -12,7 +12,7 @@
 -- After onboarding completes, a mirroring row is also inserted into `characters`
 -- so the player participates in all NPC queries transparently.
 
-CREATE TABLE player_characters (
+CREATE TABLE IF NOT EXISTS player_characters (
     id                  SERIAL PRIMARY KEY,
     session_id          TEXT NOT NULL UNIQUE,    -- ties to server ChatRequest.session_id
     user_id             TEXT NOT NULL,
@@ -64,15 +64,22 @@ CREATE TABLE player_characters (
 );
 
 -- Deferred FK: active_mission_id → missions
-ALTER TABLE player_characters
-    ADD CONSTRAINT fk_player_active_mission
-    FOREIGN KEY (active_mission_id) REFERENCES missions(id)
-    DEFERRABLE INITIALLY DEFERRED;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'fk_player_active_mission'
+    ) THEN
+        ALTER TABLE player_characters
+            ADD CONSTRAINT fk_player_active_mission
+            FOREIGN KEY (active_mission_id) REFERENCES missions(id);
+    END IF;
+END
+$$;
 
 
 -- ── Player Inventory ─────────────────────────────────────────────────────────
 
-CREATE TABLE player_inventory (
+CREATE TABLE IF NOT EXISTS player_inventory (
     id              SERIAL PRIMARY KEY,
     player_id       INTEGER NOT NULL REFERENCES player_characters(id) ON DELETE CASCADE,
     item_type       TEXT NOT NULL
@@ -93,7 +100,7 @@ CREATE TABLE player_inventory (
 -- Separate from the global relationships table so player choices
 -- don't pollute NPC social graph queries.
 
-CREATE TABLE player_faction_standing (
+CREATE TABLE IF NOT EXISTS player_faction_standing (
     id              SERIAL PRIMARY KEY,
     player_id       INTEGER NOT NULL REFERENCES player_characters(id) ON DELETE CASCADE,
     faction_id      INTEGER NOT NULL REFERENCES factions(id),
@@ -110,7 +117,7 @@ CREATE TABLE player_faction_standing (
 -- ── Player Mission Log ───────────────────────────────────────────────────────
 -- Tracks which missions the player has been offered, accepted, and how they resolved.
 
-CREATE TABLE player_mission_log (
+CREATE TABLE IF NOT EXISTS player_mission_log (
     id              SERIAL PRIMARY KEY,
     player_id       INTEGER NOT NULL REFERENCES player_characters(id) ON DELETE CASCADE,
     mission_id      INTEGER NOT NULL REFERENCES missions(id),
@@ -130,7 +137,7 @@ CREATE TABLE player_mission_log (
 -- if the session dies mid-onboarding, and referenced by the Archivist when
 -- generating the player's backstory on the mystery path.
 
-CREATE TABLE onboarding_exchanges (
+CREATE TABLE IF NOT EXISTS onboarding_exchanges (
     id              SERIAL PRIMARY KEY,
     player_id       INTEGER NOT NULL REFERENCES player_characters(id) ON DELETE CASCADE,
     step            INTEGER NOT NULL,
@@ -143,17 +150,17 @@ CREATE TABLE onboarding_exchanges (
 
 -- ── Indexes ──────────────────────────────────────────────────────────────────
 
-CREATE INDEX idx_player_session ON player_characters(session_id);
-CREATE INDEX idx_player_user ON player_characters(user_id);
-CREATE INDEX idx_player_status ON player_characters(status);
-CREATE INDEX idx_player_faction ON player_characters(faction_id);
-CREATE INDEX idx_player_location ON player_characters(current_location_id);
-CREATE INDEX idx_player_onboarding ON player_characters(onboarding_complete, creation_path);
-CREATE INDEX idx_inventory_player ON player_inventory(player_id);
-CREATE INDEX idx_inventory_type ON player_inventory(item_type);
-CREATE INDEX idx_faction_standing_player ON player_faction_standing(player_id);
-CREATE INDEX idx_mission_log_player ON player_mission_log(player_id);
-CREATE INDEX idx_onboarding_player ON onboarding_exchanges(player_id, step);
+CREATE INDEX IF NOT EXISTS idx_player_session ON player_characters(session_id);
+CREATE INDEX IF NOT EXISTS idx_player_user ON player_characters(user_id);
+CREATE INDEX IF NOT EXISTS idx_player_status ON player_characters(status);
+CREATE INDEX IF NOT EXISTS idx_player_faction ON player_characters(faction_id);
+CREATE INDEX IF NOT EXISTS idx_player_location ON player_characters(current_location_id);
+CREATE INDEX IF NOT EXISTS idx_player_onboarding ON player_characters(onboarding_complete, creation_path);
+CREATE INDEX IF NOT EXISTS idx_inventory_player ON player_inventory(player_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_type ON player_inventory(item_type);
+CREATE INDEX IF NOT EXISTS idx_faction_standing_player ON player_faction_standing(player_id);
+CREATE INDEX IF NOT EXISTS idx_mission_log_player ON player_mission_log(player_id);
+CREATE INDEX IF NOT EXISTS idx_onboarding_player ON onboarding_exchanges(player_id, step);
 
 
 -- ── Player Status View ───────────────────────────────────────────────────────
@@ -264,6 +271,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_player_updated_at ON player_characters;
 CREATE TRIGGER trg_player_updated_at
     BEFORE UPDATE ON player_characters
     FOR EACH ROW EXECUTE FUNCTION update_player_updated_at();

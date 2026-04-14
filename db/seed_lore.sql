@@ -2,8 +2,9 @@
 -- SEED DATA — The Continental, New York
 -- ============================================================================
 
-INSERT INTO story_state (current_day, current_phase, crisis_level, crisis_name, hotel_status)
-VALUES (1, 'evening', 3, 'The Succession Question', 'open');
+INSERT INTO story_state (id, current_day, current_phase, crisis_level, crisis_name, hotel_status)
+VALUES (1, 1, 'evening', 3, 'The Succession Question', 'open')
+ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
 -- HOTEL RULES
@@ -43,7 +44,8 @@ INSERT INTO hotel_rules (rule_number, title, description, penalty, exceptions) V
  'Management may override in cases of imminent threat to the hotel.'),
 (10, 'The Doctor Is Always In',
  'Medical services are available to all guests at all hours. The doctor asks no questions about the nature of injuries.',
- 'N/A — this is a guarantee, not a restriction.', NULL);
+ 'N/A — this is a guarantee, not a restriction.', NULL)
+ON CONFLICT (rule_number) DO NOTHING;
 
 -- ============================================================================
 -- FACTIONS
@@ -62,7 +64,8 @@ INSERT INTO factions (name, type, influence, territory, status, description) VAL
 ('The Osaka Continental', 'continental', 65, 'Osaka, Japan', 'active',
  'Sister Continental. Their manager has been sending envoys recently. Unknown agenda.'),
 ('The Adjudicator''s Office', 'high_table', 85, 'Mobile', 'active',
- 'Enforcement arm of the High Table. When they arrive, someone is about to have a very bad day.');
+ 'Enforcement arm of the High Table. When they arrive, someone is about to have a very bad day.')
+ON CONFLICT (name) DO NOTHING;
 
 -- ============================================================================
 -- LOCATIONS
@@ -97,7 +100,8 @@ INSERT INTO locations (name, type, district, is_continental, is_neutral, capacit
 ('Brighton Beach Bathhouse', 'safehouse', 'Brooklyn', false, false, 30, 'accessible',
  'Ruska Roma meeting ground. Steam, vodka, and old world negotiations.'),
 ('Grand Central Terminal', 'transit', 'Midtown', false, true, NULL, 'accessible',
- 'The crossroads. Neutral by default, contested by ambition.');
+ 'The crossroads. Neutral by default, contested by ambition.')
+ON CONFLICT (name) DO NOTHING;
 
 -- ============================================================================
 -- CHARACTERS
@@ -142,7 +146,8 @@ INSERT INTO characters (name, alias, title, faction_id, status, reputation, trai
 ('Marcel', 'The Sommelier', 'Continental Sommelier', 2, 'active', 70,
  '["knowledgeable","enthusiastic","particular","connected"]',
  'Weapons specialist who speaks about firearms the way others speak about wine.',
- 5, 'Excited about a new shipment. Has been reorganizing the armory all week.');
+ 5, 'Excited about a new shipment. Has been reorganizing the armory all week.')
+ON CONFLICT (name) DO NOTHING;
 
 -- ============================================================================
 -- INITIAL RELATIONSHIPS
@@ -159,39 +164,58 @@ INSERT INTO relationships (character_a_id, character_b_id, type, strength, publi
  'rival', 30, false, 'The Camorra wants what is in Viktor''s ledger. Isabella has been asking subtle questions.'),
 ((SELECT id FROM characters WHERE name='Koji Shimazu'),
  (SELECT id FROM characters WHERE name='Sofia Al-Azwar'),
- 'neutral', 40, false, 'They met once in Osaka. The meeting did not go well.');
+ 'neutral', 40, false, 'They met once in Osaka. The meeting did not go well.')
+ON CONFLICT (character_a_id, character_b_id) DO NOTHING;
 
 -- ============================================================================
 -- INITIAL DEBTS
 -- ============================================================================
-INSERT INTO debts_markers (creditor_id, debtor_id, marker_type, description, value, status, created_day) VALUES
-((SELECT id FROM characters WHERE name='Sofia Al-Azwar'),
- (SELECT id FROM characters WHERE name='Winston'),
- 'marker', 'For services rendered during the Casablanca incident. Winston asked. Sofia delivered.', 7, 'outstanding', 0),
-((SELECT id FROM characters WHERE name='Isabella Rosetti'),
- (SELECT id FROM characters WHERE name='Tick Tock Man'),
- 'favor', 'The Bowery network provided intelligence on a Camorra rival. Isabella has not yet repaid.', 4, 'outstanding', 0);
+-- No natural unique key, so gate the whole insert on "table is empty".
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM debts_markers) THEN
+        INSERT INTO debts_markers (creditor_id, debtor_id, marker_type, description, value, status, created_day) VALUES
+        ((SELECT id FROM characters WHERE name='Sofia Al-Azwar'),
+         (SELECT id FROM characters WHERE name='Winston'),
+         'marker', 'For services rendered during the Casablanca incident. Winston asked. Sofia delivered.', 7, 'outstanding', 0),
+        ((SELECT id FROM characters WHERE name='Isabella Rosetti'),
+         (SELECT id FROM characters WHERE name='Tick Tock Man'),
+         'favor', 'The Bowery network provided intelligence on a Camorra rival. Isabella has not yet repaid.', 4, 'outstanding', 0);
+    END IF;
+END
+$$;
 
 -- ============================================================================
 -- INITIAL EVENTS (Day 1)
 -- ============================================================================
-INSERT INTO events (day, phase, event_type, title, description, location_id, severity, is_public) VALUES
-(1, 'afternoon', 'arrival', 'Koji Shimazu Arrives',
- 'An envoy from the Osaka Continental arrived without advance notice. He presented proper credentials and requested a table in the dining room.',
- (SELECT id FROM locations WHERE name='The Dining Room'), 3, true),
-(1, 'evening', 'arrival', 'Sofia Al-Azwar Checks In',
- 'The Director of the Casablanca Continental arrived with two Belgian Malinois and minimal luggage. Requested Room 818. Specifically asked about the fire exits.',
- (SELECT id FROM locations WHERE name='The Front Desk'), 4, true),
-(1, 'evening', 'arrival', 'Isabella Rosetti Arrives',
- 'The Camorra underboss made an entrance. Full entourage, which she dismissed at the door per hotel rules. Went straight to the lounge.',
- (SELECT id FROM locations WHERE name='The Lounge'), 3, true),
-(1, 'evening', 'request', 'Viktor Levkin Seeks Sanctuary',
- 'A disheveled man claiming to be Viktor Levkin of the Ruska Roma appeared at the front desk requesting a room and protection. He says his own people are hunting him.',
- (SELECT id FROM locations WHERE name='The Front Desk'), 6, false);
+-- No natural unique key, so gate the whole insert on "table is empty".
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM events) THEN
+        INSERT INTO events (day, phase, event_type, title, description, location_id, severity, is_public) VALUES
+        (1, 'afternoon', 'arrival', 'Koji Shimazu Arrives',
+         'An envoy from the Osaka Continental arrived without advance notice. He presented proper credentials and requested a table in the dining room.',
+         (SELECT id FROM locations WHERE name='The Dining Room'), 3, true),
+        (1, 'evening', 'arrival', 'Sofia Al-Azwar Checks In',
+         'The Director of the Casablanca Continental arrived with two Belgian Malinois and minimal luggage. Requested Room 818. Specifically asked about the fire exits.',
+         (SELECT id FROM locations WHERE name='The Front Desk'), 4, true),
+        (1, 'evening', 'arrival', 'Isabella Rosetti Arrives',
+         'The Camorra underboss made an entrance. Full entourage, which she dismissed at the door per hotel rules. Went straight to the lounge.',
+         (SELECT id FROM locations WHERE name='The Lounge'), 3, true),
+        (1, 'evening', 'request', 'Viktor Levkin Seeks Sanctuary',
+         'A disheveled man claiming to be Viktor Levkin of the Ruska Roma appeared at the front desk requesting a room and protection. He says his own people are hunting him.',
+         (SELECT id FROM locations WHERE name='The Front Desk'), 6, false);
+    END IF;
+END
+$$;
 
 -- ============================================================================
 -- LORE CHUNKS (for semantic retrieval)
 -- ============================================================================
+-- Gate on "table is empty" since titles aren't unique and we don't want dupes.
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM lore_chunks) THEN
 INSERT INTO lore_chunks (category, title, content, tags, canon_level) VALUES
 ('history', 'The Founding of The Continental',
  'The Continental Hotel was established in 1888 as a neutral meeting ground for the nascent criminal underworld of New York City. The original charter, signed by seven founding families, established the core principle: no business on hotel grounds. The building itself predates the hotel, having served as a private club for Gilded Age industrialists whose enterprises were not entirely above board.',
@@ -223,3 +247,6 @@ INSERT INTO lore_chunks (category, title, content, tags, canon_level) VALUES
 ('ceremony', 'The Rite of Parley',
  'When hostile parties wish to negotiate on Continental grounds, they may invoke the Rite of Parley. Both parties must surrender their weapons to the Sommelier, agree to a time limit, and accept the Concierge as arbiter. The Concierge does not decide outcomes—they enforce fairness of process. If either party breaks parley, they are immediately in violation of Rule 1.',
  ARRAY['parley','negotiation','ceremony','concierge','protocol'], 'established');
+    END IF;
+END
+$$;
