@@ -133,9 +133,21 @@ async def advance_onboarding_step(
     DIRECT_FIELDS = {"name", "alias", "title", "archetype", "backstory", "faction_id"}
     updates: dict[str, Any] = {"onboarding_step": step}
 
+    # Fetch current row so we can guard against overwriting player-provided alias
+    current = await fetch_one(
+        "SELECT alias FROM player_characters WHERE session_id = $1", session_id
+    )
+    existing_alias = current["alias"] if current else None
+
     for key, value in extracted_data.items():
         if key in DIRECT_FIELDS and value is not None:
-            updates[key] = value
+            # Never overwrite an existing alias with a model-generated 'name'.
+            # alias is always what the player typed; name can be fabricated.
+            if key == "name" and existing_alias:
+                # Keep alias as the canonical identity; let name mirror it.
+                updates["name"] = existing_alias
+            else:
+                updates[key] = value
         elif key == "identity_clue" and value:
             # Append to JSONB array atomically
             await execute(
@@ -180,6 +192,11 @@ async def complete_onboarding(session_id: str) -> dict:
 
     async with transaction() as conn:
         # Create / upsert a row in the shared characters table
+        # Prefer alias over name: the alias is what the player explicitly said
+        # in their own words. 'name' can be set by the model at the revelation
+        # step and occasionally gets fabricated — alias is always player-provided.
+        canonical_name = player["alias"] or player["name"] or "Unknown"
+
         char_id = await conn.fetchval(
             """
             INSERT INTO characters
@@ -193,7 +210,7 @@ async def complete_onboarding(session_id: str) -> dict:
                     updated_at = now()
             RETURNING id
             """,
-            player["name"] or player["alias"] or "Unknown",
+            canonical_name,
             player["alias"],
             player["title"],
             player["faction_id"],

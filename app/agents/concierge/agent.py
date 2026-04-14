@@ -14,7 +14,7 @@ to who the player IS, not just what they're asking.
 """
 
 from google.adk.agents import Agent
-from google.adk.tools import FunctionTool
+from google.adk.tools import AgentTool, FunctionTool
 
 from app.agents.archivist.agent import archivist_agent
 from app.agents.ledger.agent import ledger_agent
@@ -59,18 +59,25 @@ ORCHESTRATOR_DIRECT_TOOLS = [
     FunctionTool(func=earn_gold),
     FunctionTool(func=add_inventory_item),
     FunctionTool(func=update_faction_standing),
+    # ── Specialist agents wrapped as AgentTool ────────────────────────────────
+    # AgentTool (not sub_agent) means the specialist runs and its response
+    # is returned to the orchestrator as a tool result — not sent to the user.
+    # The orchestrator then passes that data to the narrator for final prose.
+    # (sub_agents use transfer_to_agent which is a terminal handoff — the
+    # specialist's raw JSON would go directly to the user, bypassing the Narrator.)
+    AgentTool(agent=archivist_agent),   # Lore, characters, rules, history
+    AgentTool(agent=ledger_agent),      # Debts, markers, reputation
+    AgentTool(agent=timeline_agent),    # Events, locations, collisions
 ]
 
 
 # ── Sub-agents ────────────────────────────────────────────────────────────────
-# Ordered by typical call frequency. Onboarding first — it gates everything else.
+# Only agents that produce the FINAL user-facing response go here.
+# transfer_to_agent is a terminal handoff — their output goes straight to the user.
 
 SUB_AGENTS = [
-    onboarding_agent,  # Check-in / character creation — gates all other routing
-    archivist_agent,  # Lore, characters, rules, history
-    ledger_agent,  # Debts, markers, reputation, relationships
-    timeline_agent,  # Events, locations, collision detection
-    narrator_agent,  # Final cinematic prose (always last)
+    onboarding_agent,  # Terminal: Charon speaks directly during check-in
+    narrator_agent,    # Terminal: always the last step — converts data to prose
 ]
 
 
