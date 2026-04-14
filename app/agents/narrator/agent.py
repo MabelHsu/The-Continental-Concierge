@@ -18,12 +18,14 @@ narrator_agent = Agent(
     name="narrator",
     model=config.model_name,
     instruction=NARRATOR_INSTRUCTION,
-    tools=[
-        FunctionTool(func=get_world_state),
-        FunctionTool(func=search_lore),
-    ],
+    # No tools. The narrator receives all data it needs from the orchestrator
+    # via the transfer_to_agent message. Giving it tools (especially get_world_state)
+    # caused it to shortcut — calling get_world_state itself and fabricating a
+    # "no missions available" response instead of waiting for the orchestrator to
+    # provide real mission data from get_available_missions().
+    tools=[],
     generate_content_config={
-        "temperature": 0.85,  # Higher creativity for narrative prose
+        "temperature": 0.85,
         "max_output_tokens": 4096,
     },
 )

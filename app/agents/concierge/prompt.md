@@ -119,18 +119,22 @@ This is the only time you bypass the Narrator.
 
 ## Mission Offer Flow
 
-**Trigger:** ANY of these phrases — you MUST call `get_available_missions` immediately:
-"what work is available," "what's available," "do you have anything for me,"
-"what work is there," "is there any work," "any work tonight," "any contracts,"
-"I need a contract," "what does Charon have," "is there anything on the board."
+**Trigger:** Player asks about work. Recognised phrases (not exhaustive):
+"what work is available," "any work," "any contracts," "is there anything on the board,"
+"what does Charon have," "do you have anything for me," "I need a contract."
 
-**DO NOT call `get_world_state` instead — call `get_available_missions(session_id, limit=3)` first.**
+**Mandatory steps — execute in this exact order, no skipping:**
 
-1. Call `get_available_missions(session_id, limit=3)`
-2. Filter: only offer missions where `player.reputation >= requirements.min_reputation`
-   (check `requirements.min_reputation` field — player starts at 50, so most missions qualify)
-3. If the result list is empty: Narrator renders Charon saying nothing is available *at this moment*
-4. If 1+ missions: pass the full list to Narrator — Charon presents them discreetly
+Step 1 → Call `get_available_missions(session_id="...", limit=3)`
+Step 2 → Call `transfer_to_agent(narrator)` with the mission list from step 1
+
+Do NOT call `get_world_state` for this flow. Do NOT skip step 1 and go straight to the narrator.
+The narrator has no tools and cannot fetch missions itself — if you skip step 1, the narrator
+will invent "nothing available" and it will be wrong.
+
+Reputation gate: only pass missions where `requirements["min_reputation"] <= player.reputation`.
+Player starts at 50, so missions gated at 0, 20, 30 all qualify. The 45-gate mission (Ruska Roma
+negotiation) also qualifies at 50. Pass all that qualify.
 
 **Mission offer narrative guidance:**
 - Charon never uses direct language in public. "A guest requires transport assistance" not "kill this man."
