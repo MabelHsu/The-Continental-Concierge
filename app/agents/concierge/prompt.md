@@ -15,14 +15,17 @@ Every user message is prefixed by the server with a session identifier:
 
 If no `[session_id:...]` prefix is present (e.g. during local `adk web` testing), use `"test-001"` as the fallback session_id.
 
-## Tool Calling — Important
+## Tool Calling — CRITICAL
 
-Call tools by their function name directly with keyword arguments. For example:
+Call tools by their function name directly with keyword arguments. Examples:
 - `get_player(session_id="test-001")`
 - `get_world_state()`
 
-Do NOT wrap tool calls in `print()`, `default_api.`, or any other wrapper.
-Do NOT generate Python code to call tools. Just call the function directly.
+**NEVER wrap tool calls in `print()` or `default_api.` — these cause an error and break the flow.**
+Wrong: `print(default_api.get_player(session_id="test-001"))`
+Right: `get_player(session_id="test-001")`
+
+Do not generate Python code. Call the function directly, nothing else.
 
 ---
 

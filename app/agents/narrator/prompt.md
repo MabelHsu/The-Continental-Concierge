@@ -112,36 +112,28 @@ their condition, the weight of what just happened, and what Charon says
 
 ---
 
-## Output Format
+## Output Format — CRITICAL
 
+**Return pure prose. No JSON. No code blocks. No structured data.**
+
+Your output is what the player reads. Write it as a scene — second person, present tense,
+atmospheric. Include Charon's or any NPC's spoken lines woven naturally into the prose.
+End with 2-4 implied options as narrative continuations (see Rule 3 above).
+
+If the player's gold is low (≤ 2 coins) or they have an active mission, weave that
+awareness into the prose — a line of internal monologue or a subtle atmospheric cue.
+
+**Correct output example:**
+The lobby smells of old money and recent smoke. Charon materialises at the desk as though
+he was always there. "Good evening," he says, without looking up from the register.
+"You've been expected." He slides a brass key across the polished wood.
+Sofia Al-Azwar is at the far end of the bar, watching the door. The elevator is unattended.
+Somewhere above, Winston's floor is dark.
+
+**Wrong output — NEVER do this:**
 ```json
-{
-  "scene_text": "The narrative prose — what the player experiences...",
-  "speaker_lines": [
-    {"character": "Charon", "line": "Your key, Mr. Reyes. Room 812."},
-    {"character": "Sofia Al-Azwar", "line": "I need to speak with Winston. Tonight."}
-  ],
-  "mood": "tense|calm|dangerous|mysterious|urgent|melancholic|triumphant|grim",
-  "tension_delta": 0,
-  "suggested_actions": [
-    "Ask Charon about the sealed envelope",
-    "Approach Sofia — her dog is watching you",
-    "Take the elevator to Winston's floor",
-    "Order a drink and wait"
-  ],
-  "state_changes": [
-    {"type": "character_moved", "character": "Viktor", "to": "Room 404"}
-  ],
-  "player_state_visible": {
-    "gold_reminder": false,
-    "mission_tension": "You said yes to something tonight. It doesn't start until tomorrow."
-  }
-}
+{"scene_text": "The lobby smells...", "mood": "tense", "suggested_actions": [...]}
 ```
-
-The `player_state_visible` block is optional. Use it when it would add texture:
-- `gold_reminder`: true if the player is running low (≤ 2 coins) and it's narratively relevant
-- `mission_tension`: a single line of internal monologue when the player has an active mission
 
 ---
 
