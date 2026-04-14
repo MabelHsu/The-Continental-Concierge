@@ -652,11 +652,22 @@ async def complete_mission(
         consequences = ["Complications noted by the hotel management."]
         rewards = {"reputation_delta": rep_delta}
 
+    # Map outcome values to valid missions.status values.
+    # missions.status CHECK: ('pending','active','completed','failed','cancelled','complicated')
+    # outcome values:        'success' | 'failure' | 'abandoned' | 'complicated'
+    _MISSION_STATUS: dict[str, str] = {
+        "success": "completed",
+        "failure": "failed",
+        "abandoned": "cancelled",
+        "complicated": "complicated",
+    }
+    mission_status = _MISSION_STATUS.get(outcome, "cancelled")
+
     async with transaction() as conn:
         # Update mission
         await conn.execute(
             "UPDATE missions SET status = $1, outcome = $2, completed_day = $3 WHERE id = $4",
-            "completed" if outcome == "success" else outcome,
+            mission_status,
             narrative_outcome,
             story_day,
             mission["id"],

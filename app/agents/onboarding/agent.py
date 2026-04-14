@@ -16,7 +16,6 @@ is bypassed during onboarding — Charon's lines are the output.
 from google.adk.agents import Agent
 from google.adk.tools import FunctionTool
 
-from app.shared.config import config
 from app.tools.lore_tools import lookup_character, search_lore
 from app.tools.player_tools import (
     advance_onboarding_step,

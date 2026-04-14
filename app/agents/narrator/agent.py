@@ -6,11 +6,8 @@ cinematic, consistent, atmospheric narrative for the player.
 """
 
 from google.adk.agents import Agent
-from google.adk.tools import FunctionTool
 
 from app.shared.config import config
-from app.tools.lore_tools import search_lore
-from app.tools.world_state_tools import get_world_state
 
 NARRATOR_INSTRUCTION = open("app/agents/narrator/prompt.md", "r").read()
 
