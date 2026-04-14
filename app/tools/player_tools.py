@@ -88,33 +88,58 @@ async def advance_onboarding_step(
     step: int,
     charon_line: str,
     player_response: str,
-    extracted_data: dict,
+    alias: str | None = None,
+    name: str | None = None,
+    archetype: str | None = None,
+    faction_id: int | None = None,
+    identity_clue: str | None = None,
+    identity_revealed: bool = False,
 ) -> dict:
     """
-    Record a single onboarding exchange and apply any extracted fields to
-    the player_characters row.
+    Record a single onboarding exchange and update the player_characters row.
 
-    The onboarding agent calls this after each Charon ↔ player turn.
-    extracted_data keys must match player_characters columns (name, alias,
-    archetype, faction_id, etc.) or the special key 'identity_clue' which
-    appends to identity_clues JSONB array.
+    The onboarding agent calls this after each Charon/player turn.
+    Pass only the fields you confidently extracted from the player's response.
+    All extracted fields are optional — omit anything you are not certain about.
 
     Args:
-        session_id: The session.
+        session_id: The current session.
         step: Onboarding step number (1-based).
-        charon_line: What Charon said.
-        player_response: What the player replied.
-        extracted_data: Structured data parsed from the exchange.
+        charon_line: The exact line Charon just spoke.
+        player_response: The player's reply.
+        alias: Working name/handle the player provided (e.g. "Ghost", "Pamonha Lady").
+        name: Full name if explicitly stated — leave null if uncertain.
+        archetype: One of: assassin, cleaner, fixer, information_broker,
+                   weapons_dealer, driver, medic, enforcer.
+        faction_id: Integer ID of the player's faction, or null for independent.
+        identity_clue: One-sentence inference about identity/history/connections.
+        identity_revealed: Set true only on the final mystery-path revelation step.
 
     Returns:
         Updated player_characters row.
     """
     # 1. Log the exchange
-    player = await fetch_one("SELECT id FROM player_characters WHERE session_id = $1", session_id)
+    player = await fetch_one("SELECT id, alias FROM player_characters WHERE session_id = $1", session_id)
     if not player:
         raise ValueError(f"No player character for session {session_id}")
 
     player_id = player["id"]
+    existing_alias = player["alias"]
+
+    # Reconstruct extracted_data dict for the audit log
+    extracted_data_log: dict[str, Any] = {}
+    if alias:
+        extracted_data_log["alias"] = alias
+    if name:
+        extracted_data_log["name"] = name
+    if archetype:
+        extracted_data_log["archetype"] = archetype
+    if faction_id is not None:
+        extracted_data_log["faction_id"] = faction_id
+    if identity_clue:
+        extracted_data_log["identity_clue"] = identity_clue
+    if identity_revealed:
+        extracted_data_log["identity_revealed"] = identity_revealed
 
     await execute(
         """
@@ -126,39 +151,42 @@ async def advance_onboarding_step(
         step,
         charon_line,
         player_response,
-        json.dumps(extracted_data),
+        json.dumps(extracted_data_log),
     )
 
-    # 2. Apply extracted fields to player_characters
-    DIRECT_FIELDS = {"name", "alias", "title", "archetype", "backstory", "faction_id"}
+    # 2. Build updates — alias is always preferred over model-generated name
     updates: dict[str, Any] = {"onboarding_step": step}
 
-    # Fetch current row so we can guard against overwriting player-provided alias
-    current = await fetch_one(
-        "SELECT alias FROM player_characters WHERE session_id = $1", session_id
-    )
-    existing_alias = current["alias"] if current else None
+    if alias:
+        updates["alias"] = alias
+        # Mirror alias → name so both fields are populated
+        updates["name"] = alias
+    elif name:
+        # Only set name if no alias exists yet; never overwrite a player-provided alias
+        if not existing_alias:
+            updates["name"] = name
+        else:
+            # Alias already set — keep it canonical, ignore model-invented name
+            updates["name"] = existing_alias
 
-    for key, value in extracted_data.items():
-        if key in DIRECT_FIELDS and value is not None:
-            # Never overwrite an existing alias with a model-generated 'name'.
-            # alias is always what the player typed; name can be fabricated.
-            if key == "name" and existing_alias:
-                # Keep alias as the canonical identity; let name mirror it.
-                updates["name"] = existing_alias
-            else:
-                updates[key] = value
-        elif key == "identity_clue" and value:
-            # Append to JSONB array atomically
-            await execute(
-                """
-                UPDATE player_characters
-                SET identity_clues = identity_clues || $1::jsonb
-                WHERE session_id = $2
-                """,
-                json.dumps([value]),
-                session_id,
-            )
+    if archetype:
+        updates["archetype"] = archetype
+    if faction_id is not None:
+        updates["faction_id"] = faction_id
+    if identity_revealed:
+        updates["identity_revealed"] = True
+
+    # Append identity clue atomically (separate UPDATE to avoid SET clause complexity)
+    if identity_clue:
+        await execute(
+            """
+            UPDATE player_characters
+            SET identity_clues = identity_clues || $1::jsonb
+            WHERE session_id = $2
+            """,
+            json.dumps([identity_clue]),
+            session_id,
+        )
 
     # 3. Build SET clause dynamically (safe — keys are allowlisted above)
     set_clauses = ", ".join(f"{k} = ${i + 2}" for i, k in enumerate(updates.keys()))

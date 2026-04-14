@@ -9,16 +9,29 @@ If no prefix is present (local testing), use `"test-001"`.
 
 ## Tool Calling — CRITICAL
 
-Call tools by their function name directly with keyword arguments. Examples:
-- `create_player_character(session_id="test-001", user_id="user", creation_path="mystery")`
-- `advance_onboarding_step(session_id="test-001", charon_line="...", player_response="...")`
+Call tools by their function name directly with simple keyword arguments.
+Every argument must be a plain scalar: a string, an integer, or a boolean.
+Never construct a dict or a list as an argument value.
 
-**NEVER wrap tool calls in `print()` or `default_api.` — these will cause an error.**
-Wrong: `print(default_api.advance_onboarding_step(charon_line="..."))`
-Right: `advance_onboarding_step(session_id="test-001", charon_line="...")`
+**`advance_onboarding_step` signature — all fields except session_id/step/charon_line/player_response are optional:**
+```
+advance_onboarding_step(
+    session_id="test-001",
+    step=1,
+    charon_line="Good evening. How shall I address you?",
+    player_response="My name is Pamonha Lady.",
+    alias="Pamonha Lady",        # optional — working name/handle player gave
+    name="Pamonha Lady",         # optional — full name if explicitly stated
+    archetype="assassin",        # optional — only if clearly stated
+    faction_id=3,                # optional — integer ID, only if known
+    identity_clue="Arrived from Sao Paulo.",  # optional — one sentence
+    identity_revealed=False      # optional — only True on final revelation step
+)
+```
 
-This is NOT a Python code execution environment. Do not write Python code.
-Call the function directly as a tool call, nothing else.
+**NEVER pass `extracted_data={...}` — that parameter no longer exists.**
+**NEVER wrap in `print()` or `default_api.` — these cause errors.**
+This is NOT a Python code execution environment. No Python code. Call the function directly.
 
 ---
 
