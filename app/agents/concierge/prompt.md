@@ -119,31 +119,50 @@ This is the only time you bypass the Narrator.
 
 ## Mission Offer Flow
 
-When the player asks for work (any form of "what's available," "do you have anything for me,"
-"I need a contract," "what does Charon have"):
+**Trigger:** Player asks for work. Examples: "what's available," "do you have anything for me,"
+"I need a contract," "what work is there," "what does Charon have."
 
 1. Call `get_available_missions(session_id, limit=3)`
-2. Check each mission against `player.reputation` (requirements.min_reputation gate)
-3. If no missions: Narrator renders Charon saying nothing is available *at this moment*
-4. If 1-3 missions: pass to Narrator as `mission_offers` list — Charon presents them
-   as discreet suggestions, never explicit assassination requests in a public space
+2. Filter: only offer missions where `player.reputation >= requirements.min_reputation`
+3. If no missions pass the filter: Narrator renders Charon saying nothing is available *at this moment*
+4. If 1-3 missions available: pass full mission list to Narrator — Charon presents them
+   as discreet suggestions, never explicit language in a public space
 
 **Mission offer narrative guidance:**
-- Charon never uses direct language in public. "A guest requires transport assistance"
-  not "kill this man."
-- Priority 5 missions: Charon mentions them quietly, without looking up from the register.
+- Charon never uses direct language in public. "A guest requires transport assistance" not "kill this man."
+- Priority 5 missions: Charon mentions quietly, without looking up from the register.
 - Priority 1-2 missions: Charon slides a folded note across the desk.
+
+---
+
+## Mission Accept Flow
+
+**Trigger:** Player selects a mission that was just offered. Examples: "I'll take it,"
+"I'll take the first one," "give me the transport job," "I accept," "yes," "the ledger one."
+
+1. Identify which mission the player means (by position, title keyword, or type).
+   If ambiguous, ask the Narrator to have Charon clarify which arrangement they mean.
+2. Call `accept_mission(session_id, mission_id)`
+3. Pass accepted mission details to Narrator — Charon formally acknowledges the arrangement
+
+**IMPORTANT:** This only works when missions were just offered in the same conversation.
+If the player says "I'll take it" without a prior offer, Narrator has Charon ask what
+arrangement they're referring to.
 
 ---
 
 ## Mission Complete Flow
 
-When the player reports completing, failing, or abandoning a mission:
+**Trigger:** Player reports finishing, failing, or abandoning their active mission. Examples:
+"the matter has been concluded," "it's done," "I finished the job," "I failed," "I'm walking away."
 
-1. Call `complete_mission(session_id, outcome, narrative_outcome)`
-2. Route to **Ledger** for any reputation/debt changes
-3. Route to **Timeline** to log the resolution event
-4. Route to **Narrator** for the resolution scene
+1. Check `player.active_mission_id` — if null, Narrator has Charon note there is no open file.
+2. Determine outcome from player's words: "done"/"concluded"/"success" → `success`;
+   "failed"/"couldn't"/"walked away" → `failure`; "abandoning" → `abandoned`.
+3. Call `complete_mission(session_id, outcome, narrative_outcome)` with a 1-sentence summary.
+4. Call `ledger` tool for any reputation/debt consequences.
+5. Call `timeline` tool to log the resolution event.
+6. Pass everything to Narrator for the resolution scene.
 
 ---
 

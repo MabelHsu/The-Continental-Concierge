@@ -250,3 +250,46 @@ INSERT INTO lore_chunks (category, title, content, tags, canon_level) VALUES
     END IF;
 END
 $$;
+
+-- ============================================================================
+-- MISSIONS — Available work for new operatives (Day 1, Evening)
+-- ============================================================================
+-- Idempotent: only inserts if the table is empty. Re-running is safe.
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM missions) THEN
+        INSERT INTO missions
+            (title, requested_by_id, mission_type, status, priority,
+             description, requirements, deadline_day, deadline_phase,
+             created_day, created_phase)
+        VALUES
+        -- Priority 4: Transport — entry-level, low minimum reputation
+        ('The Osaka Arrangement',
+         5, 'transport', 'pending', 4,
+         'A guest of the Osaka Continental requires discreet transport from JFK to a private address in the Meatpacking District. No weapons. No tail. No questions. The guest carries something that certain parties would prefer he did not reach his destination. Your job is to ensure he does.',
+         '{"min_reputation": 0, "reward_gold": 3, "reward_reputation": 8, "notes": "Strictly transport. Any engagement disqualifies the contract."}',
+         2, 'morning', 1, 'evening'),
+
+        -- Priority 3: Recovery — mid-tier
+        ('The Missing Ledger',
+         7, 'favor', 'pending', 3,
+         'A ledger has gone missing from the Camorra''s New York office. The ledger contains nothing that would interest law enforcement — but everything that would interest three other factions currently circling the Camorra''s territory. Recovery before dawn tomorrow. Delivery to La Contessa directly. No copies.',
+         '{"min_reputation": 20, "reward_gold": 5, "reward_reputation": 12, "notes": "Discretion is the entire job. Violence is an admission of failure."}',
+         2, 'dawn', 1, 'evening'),
+
+        -- Priority 3: Protection
+        ('The Sommelier''s Request',
+         10, 'protection', 'pending', 3,
+         'A guest arriving tomorrow morning has made certain enemies in transit. The Continental has guaranteed her safety within these walls. Marcel requires someone to ensure that guarantee holds through her first night. Roof access and corridor monitoring. Eight hours.',
+         '{"min_reputation": 30, "reward_gold": 4, "reward_reputation": 10, "notes": "Guest identity is need-to-know. You will be briefed upon acceptance."}',
+         2, 'morning', 1, 'evening'),
+
+        -- Priority 5: Negotiation — high stakes, reputation gated
+        ('The Ruska Roma Question',
+         6, 'negotiation', 'pending', 5,
+         'Viktor Levkin requires a mediator for a parley with a representative of the Bowery King''s network. The matter concerns territorial overlap in the Garment District. Both parties have agreed to meet on Continental grounds. Both parties are also known to have violated their last three agreements. The Concierge requires someone to sit the table and ensure no one leaves early. In a box.',
+         '{"min_reputation": 45, "reward_gold": 8, "reward_reputation": 18, "notes": "Rite of Parley. Continental rules apply. Any violation falls on the mediator."}',
+         3, 'afternoon', 1, 'evening');
+    END IF;
+END
+$$;
