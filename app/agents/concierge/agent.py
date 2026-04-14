@@ -65,9 +65,9 @@ ORCHESTRATOR_DIRECT_TOOLS = [
     # The orchestrator then passes that data to the narrator for final prose.
     # (sub_agents use transfer_to_agent which is a terminal handoff — the
     # specialist's raw JSON would go directly to the user, bypassing the Narrator.)
-    AgentTool(agent=archivist_agent),   # Lore, characters, rules, history
-    AgentTool(agent=ledger_agent),      # Debts, markers, reputation
-    AgentTool(agent=timeline_agent),    # Events, locations, collisions
+    AgentTool(agent=archivist_agent),  # Lore, characters, rules, history
+    AgentTool(agent=ledger_agent),  # Debts, markers, reputation
+    AgentTool(agent=timeline_agent),  # Events, locations, collisions
 ]
 
 
@@ -77,7 +77,7 @@ ORCHESTRATOR_DIRECT_TOOLS = [
 
 SUB_AGENTS = [
     onboarding_agent,  # Terminal: Charon speaks directly during check-in
-    narrator_agent,    # Terminal: always the last step — converts data to prose
+    narrator_agent,  # Terminal: always the last step — converts data to prose
 ]
 
 

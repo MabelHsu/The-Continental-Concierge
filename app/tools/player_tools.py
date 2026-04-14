@@ -119,7 +119,9 @@ async def advance_onboarding_step(
         Updated player_characters row.
     """
     # 1. Log the exchange
-    player = await fetch_one("SELECT id, alias FROM player_characters WHERE session_id = $1", session_id)
+    player = await fetch_one(
+        "SELECT id, alias FROM player_characters WHERE session_id = $1", session_id
+    )
     if not player:
         raise ValueError(f"No player character for session {session_id}")
 
