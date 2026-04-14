@@ -31,7 +31,13 @@ ONBOARDING_INSTRUCTION = open("app/agents/onboarding/prompt.md", "r").read()
 
 onboarding_agent = Agent(
     name="onboarding",
-    model=config.model_name,
+    # gemini-2.5-flash has more reliable structured function-call format
+    # compliance than gemini-2.5-pro. The 2.5-pro model frequently generates
+    # Python-style tool calls (print(default_api.xxx(...))) which ADK rejects
+    # as malformed. 2.5-flash handles the flat scalar parameters correctly and
+    # produces Charon's voice well at temperature 0.7.
+    # Do NOT switch this back to config.model_name (2.5-pro) without testing.
+    model="gemini-2.5-flash",
     instruction=ONBOARDING_INSTRUCTION,
     tools=[
         FunctionTool(func=create_player_character),
@@ -44,15 +50,8 @@ onboarding_agent = Agent(
         FunctionTool(func=get_world_state),
     ],
     generate_content_config={
-        # 0.4 reduces the `print(default_api.xxx())` malformed-call sampling
-        # error while still giving Charon enough variation to feel alive.
-        # If lines feel flat, try 0.5. Never go above 0.6 — the model starts
-        # generating Python code wrappers at higher temperatures.
-        "temperature": 0.4,
+        "temperature": 0.7,
         "max_output_tokens": 1024,
     },
-    # This agent IS user-facing during onboarding.
-    # Its charon_line field goes directly to the player without
-    # passing through the Narrative Director.
     output_key="onboarding_response",
 )
