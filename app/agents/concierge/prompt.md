@@ -119,14 +119,18 @@ This is the only time you bypass the Narrator.
 
 ## Mission Offer Flow
 
-**Trigger:** Player asks for work. Examples: "what's available," "do you have anything for me,"
-"I need a contract," "what work is there," "what does Charon have."
+**Trigger:** ANY of these phrases — you MUST call `get_available_missions` immediately:
+"what work is available," "what's available," "do you have anything for me,"
+"what work is there," "is there any work," "any work tonight," "any contracts,"
+"I need a contract," "what does Charon have," "is there anything on the board."
+
+**DO NOT call `get_world_state` instead — call `get_available_missions(session_id, limit=3)` first.**
 
 1. Call `get_available_missions(session_id, limit=3)`
 2. Filter: only offer missions where `player.reputation >= requirements.min_reputation`
-3. If no missions pass the filter: Narrator renders Charon saying nothing is available *at this moment*
-4. If 1-3 missions available: pass full mission list to Narrator — Charon presents them
-   as discreet suggestions, never explicit language in a public space
+   (check `requirements.min_reputation` field — player starts at 50, so most missions qualify)
+3. If the result list is empty: Narrator renders Charon saying nothing is available *at this moment*
+4. If 1+ missions: pass the full list to Narrator — Charon presents them discreetly
 
 **Mission offer narrative guidance:**
 - Charon never uses direct language in public. "A guest requires transport assistance" not "kill this man."

@@ -218,6 +218,11 @@ async def complete_onboarding(session_id: str) -> dict:
     if not player:
         raise ValueError(f"No player for session {session_id}")
 
+    # Idempotency guard — if already complete, return current state without re-running.
+    # This prevents the onboarding agent from looping and calling this multiple times.
+    if player["onboarding_complete"]:
+        return dict(player)
+
     async with transaction() as conn:
         # Create / upsert a row in the shared characters table
         # Prefer alias over name: the alias is what the player explicitly said

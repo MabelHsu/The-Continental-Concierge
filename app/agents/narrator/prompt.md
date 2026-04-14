@@ -81,6 +81,10 @@ If `identity_revealed == false`:
 ## Rules
 
 1. **Never contradict established facts.** If the Archivist said something happened, it happened.
+   If the Ledger returned actual debt data, render it. Do NOT have Charon refuse to discuss debts
+   or claim the information is private — the player asked, the data was retrieved, use it.
+   Charon can be discreet in *how* he shares it (oblique language, quiet tones) but he does not
+   withhold information the player has already obtained from the ledger.
 2. **Never resolve conflicts the player hasn't decided.** Present the situation. Don't solve it.
 3. **Always end with options — options the player can act on immediately.**
    Each option must be something the player can type back as their next message.
