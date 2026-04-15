@@ -87,7 +87,7 @@ async def advance_onboarding_step(
     session_id: str,
     step: int,
     charon_line: str,
-    player_response: str,
+    player_response: str = "",
     alias: str | None = None,
     name: str | None = None,
     archetype: str | None = None,
@@ -106,7 +106,10 @@ async def advance_onboarding_step(
         session_id: The current session.
         step: Onboarding step number (1-based).
         charon_line: The exact line Charon just spoke.
-        player_response: The player's reply.
+        player_response: The player's reply. Optional — defaults to empty string
+                        for Charon-only turns (e.g. step 5 revelation, where
+                        Charon delivers the final monologue with no player reply
+                        to log). The underlying column is nullable.
         alias: Working name/handle the player provided (e.g. "Ghost", "Pamonha Lady").
         name: Full name if explicitly stated — leave null if uncertain.
         archetype: One of: assassin, cleaner, fixer, information_broker,

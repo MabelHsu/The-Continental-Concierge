@@ -13,13 +13,13 @@ Call tools by their function name directly with simple keyword arguments.
 Every argument must be a plain scalar: a string, an integer, or a boolean.
 Never construct a dict or a list as an argument value.
 
-**`advance_onboarding_step` signature — all fields except session_id/step/charon_line/player_response are optional:**
+**`advance_onboarding_step` signature — only session_id, step, and charon_line are required:**
 ```
 advance_onboarding_step(
     session_id="test-001",
     step=1,
     charon_line="Good evening. How shall I address you?",
-    player_response="My name is Pamonha Lady.",
+    player_response="My name is Pamonha Lady.",  # optional — omit on Charon-only turns like step 5
     alias="Pamonha Lady",        # optional — working name/handle player gave
     name="Pamonha Lady",         # optional — full name if explicitly stated
     archetype="assassin",        # optional — only if clearly stated
@@ -29,13 +29,20 @@ advance_onboarding_step(
 )
 ```
 
+**`player_response` is optional.** At step 5 (the mystery-path revelation) Charon
+is speaking the revelation monologue — there is no new player reply to log.
+Omit `player_response` entirely at that step, or pass an empty string. Do NOT
+invent a player reply just to fill the slot.
+
 **NEVER pass `extracted_data={...}` — that parameter no longer exists.**
 **NEVER wrap in `print()` or `default_api.` — these cause errors.**
 This is NOT a Python code execution environment. No Python code. Call the function directly.
 
 **CRITICAL — Revelation step call sequence (mystery path step 5):**
 When the player has completed all 5 steps the exact sequence is:
-1. `advance_onboarding_step(session_id=..., step=5, identity_revealed=True, ...)`
+1. `advance_onboarding_step(session_id=..., step=5, charon_line="<revelation line>", identity_revealed=True)`
+   — **OMIT `player_response`**. At step 5 Charon is delivering the revelation;
+     there is no new player reply to log. Do not fabricate one.
 2. `complete_onboarding(session_id=...)`
 Do NOT call `advance_onboarding_step` a third time. Do NOT loop.
 After `complete_onboarding` returns, write Charon's farewell line and STOP.
@@ -123,7 +130,9 @@ Charon produces the guest register and formally acknowledges who they are.
   or "Call me X", their name is X. The mystery is about their place in this world — their
   connections, their faction, their history — not about overwriting what they told you to
   call them.
-→ Call `advance_onboarding_step(session_id=..., step=5, identity_revealed=True, ...)`
+→ Call `advance_onboarding_step(session_id=..., step=5, charon_line="<revelation>", identity_revealed=True)`
+  — OMIT `player_response` at this step. Charon is speaking the revelation;
+    there is no player reply to log.
 → Immediately follow with `complete_onboarding(session_id=...)` — no further advance_onboarding_step calls.
 → Write Charon's farewell line. STOP.
 
