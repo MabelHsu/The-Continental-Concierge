@@ -1,0 +1,262 @@
+# =============================================================================
+# MCP Toolbox for Databases — LOCAL config (AlloyDB Omni via docker-compose)
+# =============================================================================
+# Why this file exists
+# --------------------
+# `tools.yaml` (sibling file) targets cloud AlloyDB and uses SQL features that
+# do NOT exist in AlloyDB Omni: `kind: alloydb-postgres`, secret-manager
+# password lookup, `google_ml.embedding(...)`, and `hybrid_lore_search()`.
+# Trying to run the toolbox against Omni with that file fails immediately.
+#
+# This file is the Phase 4 dev counterpart:
+#   1. Source switched to `kind: postgres` pointing at the Omni container
+#      (127.0.0.1:5432) with credentials sourced from the project `.env`.
+#   2. Queries rewritten against the v_* views in db/retrieval_views.sql:
+#        v_character_dossier, v_active_debts, v_current_scene,
+#        v_pending_missions, v_timeline
+#      (plus a few direct table reads for things without a view).
+#   3. The two embedding-dependent tools are dropped here because Omni has no
+#      `google_ml.embedding` function. A keyword-only `search-lore-keyword`
+#      stands in so the Archivist toolset still has a search verb during
+#      Phase 4 smoke tests; the real hybrid search returns in Phase 5.
+#
+# Run with
+# --------
+#   set -a && source .env && set +a
+#   ./toolbox --tools_file mcp/alloydb_toolbox_config/tools.local.yaml
+#
+# Required env vars (already in .env.template):
+#   ALLOYDB_HOST, ALLOYDB_PORT, ALLOYDB_DATABASE,
+#   ALLOYDB_USER, ALLOYDB_PASSWORD
+#
+# DO NOT deploy this file to Cloud Run. It is dev-only. The cloud config
+# (`tools.yaml`) is the production source of truth for Phase 5–7.
+# =============================================================================
+
+version: "1"
+
+sources:
+  continental-db:
+    kind: postgres
+    host: ${ALLOYDB_HOST}
+    port: ${ALLOYDB_PORT}
+    database: ${ALLOYDB_DATABASE}
+    user: ${ALLOYDB_USER}
+    password: ${ALLOYDB_PASSWORD}
+
+tools:
+  # ── Archivist ────────────────────────────────────────────────────────────
+
+  get-character:
+    kind: postgres-sql
+    source: continental-db
+    description: >
+      Full character dossier — faction, current location, reputation,
+      traits, backstory, and last-seen day/phase. Matches on either the
+      character's primary name or alias (case-insensitive).
+    parameters:
+      - name: name
+        type: string
+        description: "Character name or alias"
+    statement: >
+      SELECT *
+      FROM v_character_dossier
+      WHERE LOWER(name)  = LOWER($1)
+         OR LOWER(alias) = LOWER($1)
+      LIMIT 1
+
+  get-rules:
+    kind: postgres-sql
+    source: continental-db
+    description: >
+      Active hotel rules. Pass a rule_number to fetch one rule;
+      omit the parameter to list every active rule in number order.
+    parameters:
+      - name: rule_number
+        type: integer
+        description: "Specific rule number (optional — omit to list all active rules)"
+    statement: >
+      SELECT rule_number, title, description, penalty,
+             exceptions, source, added_day
+      FROM hotel_rules
+      WHERE is_active = true
+        AND rule_number = COALESCE($1, rule_number)
+      ORDER BY rule_number
+
+  get-faction:
+    kind: postgres-sql
+    source: continental-db
+    description: "Faction details with the roster of characters tied to it."
+    parameters:
+      - name: faction_name
+        type: string
+        description: "Faction name"
+    statement: >
+      SELECT
+        f.id, f.name, f.type, f.influence, f.territory,
+        f.status, f.description,
+        json_agg(
+          json_build_object(
+            'name',       c.name,
+            'alias',      c.alias,
+            'status',     c.status,
+            'reputation', c.reputation
+          )
+        ) FILTER (WHERE c.id IS NOT NULL) AS members
+      FROM factions f
+      LEFT JOIN characters c ON c.faction_id = f.id
+      WHERE LOWER(f.name) = LOWER($1)
+      GROUP BY f.id, f.name, f.type, f.influence,
+               f.territory, f.status, f.description
+
+  search-lore-keyword:
+    kind: postgres-sql
+    source: continental-db
+    description: >
+      Keyword-only lore search — local Phase 4 fallback because Omni has
+      no `google_ml.embedding`. Matches title, content, and tags
+      (case-insensitive). The cloud `search-lore` tool replaces this with
+      a real hybrid (vector + RRF) search in Phase 5+.
+    parameters:
+      - name: query
+        type: string
+        description: "Search text"
+      - name: limit
+        type: integer
+        description: "Maximum rows to return (default 5)"
+    statement: >
+      SELECT id, title, content, category, canon_level, tags
+      FROM lore_chunks
+      WHERE title   ILIKE '%' || $1 || '%'
+         OR content ILIKE '%' || $1 || '%'
+         OR EXISTS (
+              SELECT 1 FROM unnest(tags) t
+              WHERE t ILIKE '%' || $1 || '%'
+            )
+      ORDER BY
+        (CASE WHEN title ILIKE '%' || $1 || '%' THEN 2 ELSE 0 END)
+        + (CASE WHEN EXISTS (
+              SELECT 1 FROM unnest(tags) t
+              WHERE t ILIKE '%' || $1 || '%'
+          ) THEN 1 ELSE 0 END)
+        DESC,
+        id DESC
+      LIMIT COALESCE($2, 5)
+
+  # ── Ledger ───────────────────────────────────────────────────────────────
+
+  get-debts:
+    kind: postgres-sql
+    source: continental-db
+    description: >
+      Outstanding debts and markers involving a character — either side
+      of the ledger. Ordered by value (highest stakes first).
+    parameters:
+      - name: character_name
+        type: string
+        description: "Character name (matches creditor or debtor)"
+    statement: >
+      SELECT *
+      FROM v_active_debts
+      WHERE LOWER(creditor_name) = LOWER($1)
+         OR LOWER(debtor_name)   = LOWER($1)
+      ORDER BY value DESC
+
+  get-reputation:
+    kind: postgres-sql
+    source: continental-db
+    description: "Reputation score, status and traits for one character."
+    parameters:
+      - name: character_name
+        type: string
+        description: "Character name or alias"
+    statement: >
+      SELECT name, alias, title, status, reputation, traits
+      FROM characters
+      WHERE LOWER(name)  = LOWER($1)
+         OR LOWER(alias) = LOWER($1)
+
+  # ── Timeline ─────────────────────────────────────────────────────────────
+
+  get-schedule:
+    kind: postgres-sql
+    source: continental-db
+    description: >
+      Every event scheduled on a given story day, with participants and
+      location. The view orders them by phase descending (latest first).
+    parameters:
+      - name: story_day
+        type: integer
+        description: "Story day number"
+    statement: >
+      SELECT *
+      FROM v_timeline
+      WHERE day = $1
+
+  list-pending-missions:
+    kind: postgres-sql
+    source: continental-db
+    description: >
+      All pending or active missions, ordered by priority (5 = highest).
+      Includes who requested the mission and who it is assigned to.
+    statement: >
+      SELECT * FROM v_pending_missions
+
+  who-is-where:
+    kind: postgres-sql
+    source: continental-db
+    description: >
+      Current scene snapshot — every location with active occupants and
+      who is in it. Empty rooms are filtered out.
+    statement: >
+      SELECT location_id, location_name, location_type, district,
+             is_continental, current_status, characters_present
+      FROM v_current_scene
+      WHERE characters_present IS NOT NULL
+      ORDER BY location_name
+
+  # ── World clock ──────────────────────────────────────────────────────────
+
+  get-world-clock:
+    kind: postgres-sql
+    source: continental-db
+    description: >
+      Current story day, phase, crisis level, hotel status, and any
+      standing High Table edict. Use this to ground any agent response
+      in the right temporal and geopolitical context.
+    statement: >
+      SELECT current_day, current_phase, crisis_level, crisis_name,
+             high_table_edict, hotel_status, updated_at
+      FROM story_state
+      WHERE id = 1
+
+# =============================================================================
+# Toolsets — kept intentionally parallel to tools.yaml so agent code that
+# binds to a toolset name (e.g. "archivist-tools") works with either config.
+# `smoke-test` is local-only and exists for Phase 4c MCP Inspector runs.
+# =============================================================================
+toolsets:
+  archivist-tools:
+    - get-character
+    - get-rules
+    - get-faction
+    - search-lore-keyword
+
+  ledger-tools:
+    - get-debts
+    - get-reputation
+
+  timeline-tools:
+    - get-schedule
+    - list-pending-missions
+    - who-is-where
+    - get-world-clock
+
+  # Six-tool sampler for Phase 4c MCP Inspector smoke tests
+  smoke-test:
+    - get-world-clock
+    - get-character
+    - get-debts
+    - get-schedule
+    - who-is-where
+    - search-lore-keyword
